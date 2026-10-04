@@ -4,7 +4,8 @@ namespace AeppGenerator.Application.Exams;
 
 public sealed record ExamDto(
     Guid Id, string Title, string AcademicYear, string TargetTopic,
-    Difficulty Difficulty, DateTime CreatedAt, List<ExamSectionDto> Sections);
+    Difficulty Difficulty, DateTime CreatedAt, List<ExamSectionDto> Sections,
+    int DurationMinutes = 180);
 
 public sealed record ExamSectionDto(
     Guid Id, Guid ExamId, SectionType SectionType, string Title,
