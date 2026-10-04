@@ -1,0 +1,6 @@
+@AeppGenerator.Api_HostAddress = http://localhost:5210
+
+GET {{AeppGenerator.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

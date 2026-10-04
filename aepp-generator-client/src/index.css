@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Segoe UI", Inter, system-ui, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+:root { font-family: var(--font-sans); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; color-scheme: light; }
+body { margin: 0; min-width: 320px; }
+button, input, textarea { font: inherit; }
+button:not(:disabled) { cursor: pointer; }
+:focus-visible { outline: 2px solid #0f766e; outline-offset: 3px; }
+::selection { background: #cce6df; color: #183c36; }
+.field-label { display: block; margin-bottom: 8px; font-size: 11px; font-weight: 600; color: #57534e; }
+.exam-paper { font-family: var(--font-serif); }
+.exam-prose { font-size: 14px; line-height: 1.85; color: #57534e; overflow-wrap: anywhere; }
+.exam-prose p + p { margin-top: 12px; }
+.exam-prose ol, .exam-prose ul { margin: 12px 0; padding-left: 22px; }
+.exam-prose ol { list-style-type: decimal; }
+.exam-prose ul { list-style-type: disc; }
+.exam-prose li { padding-left: 5px; margin-top: 7px; }
+.exam-prose strong { color: #3c4541; font-weight: 600; }
+.exam-prose :not(pre) > code { font-size: 12px; background: #f3f3ed; padding: 2px 4px; border-radius: 3px; }
+.exam-prose a { color: #0f766e; text-decoration: underline; }
+.exam-prose h1, .exam-prose h2, .exam-prose h3 { margin: 14px 0 8px; font-weight: bold; }
+.exam-prose blockquote { border-left: 2px solid #d6d3d1; margin: 12px 0; padding-left: 12px; }
+.exam-prose table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 12px; }
+.exam-prose th, .exam-prose td { border: 1px solid #e7e5e4; padding: 8px 12px; text-align: left; }
+.exam-prose th { background: #f5f5f4; color: #244f50; }
+.skip-link { position: fixed; left: 12px; top: -60px; z-index: 20; background: white; padding: 12px; border-radius: 6px; }
+.skip-link:focus { top: 12px; }
+
+@media print {
+  @page { size: A4; margin: 16mm; }
+  .app-header, .settings, .preview-controls, .skip-link { display: none !important; }
+  body, #app, .workspace, main, .preview-shell, .paper-surround { display: block !important; background: white !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; }
+  .preview-shell { overflow: visible !important; }
+  .exam-paper { width: 100%; max-width: none; padding: 0; box-shadow: none; }
+  .question, .exam-section header, table, pre { break-inside: avoid; }
+  .exam-section header { break-after: avoid; }
+  .exam-paper { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

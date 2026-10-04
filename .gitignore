@@ -1,0 +1,29 @@
+# Παραγόμενα αρχεία και εξαρτήσεις
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/coverage/
+**/.vs/
+**/.idea/
+**/*.user
+**/*.suo
+**/*.log
+.DS_Store
+
+# Τοπικές ρυθμίσεις και διαπιστευτήρια
+**/.env
+**/.env.*
+!**/.env.example
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/secrets.json
+**/*.pfx
+**/*.p12
+**/*.pem
+**/*.key
+
+# Παλαιά βοηθητικά αρχεία αρχικής δημιουργίας και στιγμιότυπα
+/Create-AeppGenerator.ps1
+/dotnet-commands.txt
+**/preview.jpg
