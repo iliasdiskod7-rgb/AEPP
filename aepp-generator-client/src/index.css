@@ -32,7 +32,8 @@ button:not(:disabled) { cursor: pointer; }
 
 @media print {
   @page { size: A4; margin: 16mm; }
-  .app-header, .settings, .preview-controls, .skip-link { display: none !important; }
+  .app-header, .settings, .preview-controls, .skip-link, .dashboard-navigation, [hidden] { display: none !important; }
+  .dashboard-body, .dashboard-content { display: block !important; margin: 0 !important; padding: 0 !important; }
   body, #app, .workspace, main, .preview-shell, .paper-surround { display: block !important; background: white !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; }
   .preview-shell { overflow: visible !important; }
   .exam-paper { width: 100%; max-width: none; padding: 0; box-shadow: none; }

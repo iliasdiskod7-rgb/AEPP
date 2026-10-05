@@ -9,8 +9,27 @@ export function useGenerateExam() {
   return useMutation({
     mutationFn: async (request: GenerateExamRequest): Promise<ExamJsonResponseDto> => {
       if (isDemoMode) return createStructuredSampleExam(request)
-      const { data } = await apiClient.post<ExamJsonResponseDto>('/exams/generate', request)
-      return data
+      const { data } = await apiClient.post<Exam>('/exams/generate', request)
+      return {
+        title: data.title,
+        durationMinutes: data.durationMinutes,
+        sections: data.sections.map(section => ({
+          theme: section.title as ExamJsonResponseDto['sections'][number]['theme'],
+          totalMarks: section.totalMarks,
+          questions: section.questions.map(question => {
+            const codeBlock = /\n\n```glossa\n([\s\S]*?)\n```\s*$/u.exec(question.contentMarkdown)
+            return {
+              code: question.subTitle,
+              questionText: codeBlock
+                ? question.contentMarkdown.slice(0, codeBlock.index)
+                : question.contentMarkdown,
+              glowCodeSnippet: codeBlock?.[1] ?? null,
+              solutionText: question.solutionMarkdown,
+              marks: question.marks,
+            }
+          }),
+        })),
+      }
     },
     retry: false,
   })

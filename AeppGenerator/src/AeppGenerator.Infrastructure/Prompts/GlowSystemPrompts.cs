@@ -106,14 +106,20 @@ public static class GlowSystemPrompts
     {
         var path = Path.Combine(AppContext.BaseDirectory, "KnowledgeBase", "panhellenic_knowledge_base.md");
         var knowledgeBase = await File.ReadAllTextAsync(path, System.Text.Encoding.UTF8, ct);
+        return await BuildSystemPromptAsync(knowledgeBase, ct);
+    }
+
+    public static Task<string> BuildSystemPromptAsync(string knowledgeBase, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(knowledgeBase))
             throw new InvalidDataException("Η βάση γνώσης των διαγωνισμάτων είναι κενή.");
 
-        return GreekAeppSystemPrompt + "\n\n" +
+        return Task.FromResult(GreekAeppSystemPrompt + "\n\n" +
             "Η παρακάτω βάση γνώσης εξειδικεύει και, σε διαφορά, αντικαθιστά τις γενικές περιγραφές δομής θεμάτων παραπάνω. " +
             "Οι κανόνες σύνταξης, το συμβόλαιο JSON και η κατανομή μονάδων του αιτήματος παραμένουν υποχρεωτικά. " +
             "Τα παραδείγματα είναι υποδείγματα, όχι οδηγία αντιγραφής ή πιστοποιημένα επίσημα θέματα.\n\n" +
-            knowledgeBase;
+            knowledgeBase);
     }
 
     public static string BuildUserPrompt(GenerateExamRequest request)

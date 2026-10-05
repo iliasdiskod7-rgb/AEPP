@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test:interpreter": "node --test tests/interpreter.test.mjs",
+    "test:whiteboard": "node --test tests/whiteboard.test.mjs",
+    "test:assessment": "node --test tests/assessment.test.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {

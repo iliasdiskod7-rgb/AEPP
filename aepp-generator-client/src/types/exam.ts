@@ -62,6 +62,7 @@ export interface Exam {
   difficulty: Difficulty
   createdAt: string // ISO 8601 UTC timestamp
   sections: ExamSection[]
+  durationMinutes: number
 }
 
 // Matches the existing .NET GenerateExamCommand exactly.

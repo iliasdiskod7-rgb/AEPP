@@ -219,5 +219,5 @@ export function createDemoExam(command: GenerateExamCommand, selected: SectionTy
     const items = questions[option.value]
     return { id: sectionId, examId, sectionType: option.value, title: option.title + ' — ' + option.description, totalMarks: items.reduce((sum, item) => sum + item.marks, 0), questions: items } satisfies ExamSection
   })
-  return { id: examId, ...command, createdAt: new Date().toISOString(), sections }
+  return { id: examId, ...command, createdAt: new Date().toISOString(), sections, durationMinutes: 180 }
 }

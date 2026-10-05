@@ -12,7 +12,7 @@ public static class ExamJsonSchema
           "additionalProperties": false,
           "required": ["title", "durationMinutes", "sections"],
           "properties": {
-            "title": { "type": "string", "minLength": 1 },
+            "title": { "type": "string" },
             "durationMinutes": { "type": "integer", "minimum": 1 },
             "sections": {
               "type": "array",
@@ -36,10 +36,10 @@ public static class ExamJsonSchema
                       "additionalProperties": false,
                       "required": ["code", "questionText", "glowCodeSnippet", "solutionText", "marks"],
                       "properties": {
-                        "code": { "type": "string", "pattern": "^[ΑΒΓΔ][1-9][0-9]*$" },
-                        "questionText": { "type": "string", "minLength": 1 },
+                        "code": { "type": "string" },
+                        "questionText": { "type": "string" },
                         "glowCodeSnippet": { "type": ["string", "null"] },
-                        "solutionText": { "type": "string", "minLength": 1 },
+                        "solutionText": { "type": "string" },
                         "marks": { "type": "integer", "minimum": 1, "maximum": 100 }
                       }
                     }

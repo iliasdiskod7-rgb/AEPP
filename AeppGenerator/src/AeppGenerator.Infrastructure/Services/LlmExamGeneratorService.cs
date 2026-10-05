@@ -1,5 +1,3 @@
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,13 +8,13 @@ using AeppGenerator.Application.Llm;
 using AeppGenerator.Domain.Enums;
 using AeppGenerator.Infrastructure.Prompts;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
+using AeppGenerator.Infrastructure.Llm;
 using SectionDto = AeppGenerator.Application.Exams.ExamSectionDto;
 
 namespace AeppGenerator.Infrastructure.Services;
 
 public sealed class LlmExamGeneratorService(
-    HttpClient httpClient, IConfiguration configuration, IWebHostEnvironment environment)
+    GeminiClient gemini, IWebHostEnvironment environment)
     : ILlmExamGeneratorService
 {
     private static readonly string[] Themes = ["Θέμα Α", "Θέμα Β", "Θέμα Γ", "Θέμα Δ"];
@@ -29,11 +27,6 @@ public sealed class LlmExamGeneratorService(
     {
         // Η επικύρωση προηγείται της ανάγνωσης αρχείων και της χρεώσιμης κλήσης.
         var userPrompt = GlowSystemPrompts.BuildUserPrompt(request);
-        var apiKey = configuration["LlmSettings:ApiKey"];
-        var model = configuration["LlmSettings:Model"];
-        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(model))
-            throw new InvalidOperationException("Απαιτούνται οι ρυθμίσεις LlmSettings:ApiKey και LlmSettings:Model.");
-
         var knowledge = await ReadResourceAsync("KnowledgeBase", "panhellenic_knowledge_base.md", ct);
         var instructions = await ReadResourceAsync("Prompts", "ExamGeneration.el.md", ct);
         var systemPrompt = GlowSystemPrompts.GreekAeppSystemPrompt + "\n\n" + instructions +
@@ -42,39 +35,23 @@ public sealed class LlmExamGeneratorService(
         userPrompt += $"\n\nΣπόρος παραλλαγής: {Guid.NewGuid():N}. " +
             "Χρησιμοποίησε νέο σενάριο και δεδομένα. Ο σπόρος δεν εμφανίζεται στο διαγώνισμα.";
 
-        using var schema = JsonDocument.Parse(ExamJsonSchema.Schema);
-        using var message = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
-        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-        message.Content = JsonContent.Create(new
-        {
-            model,
-            messages = new[]
-            {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = userPrompt }
-            },
-            response_format = new
-            {
-                type = "json_schema",
-                json_schema = new { name = "aepp_exam", strict = true, schema = schema.RootElement }
-            }
-        });
-        using var response = await httpClient.SendAsync(message, ct);
-        if (!response.IsSuccessStatusCode)
-            throw new HttpRequestException("Η υπηρεσία παραγωγής διαγωνίσματος επέστρεψε σφάλμα.",
-                null, response.StatusCode);
+        var responseBody = await gemini.GenerateAsync(systemPrompt, userPrompt, ct);
 
         ExamJsonResponseDto generated;
         try
         {
-            using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-            var choice = body.RootElement.GetProperty("choices")[0];
-            var result = choice.GetProperty("message");
-            if (choice.GetProperty("finish_reason").GetString() != "stop" ||
-                (result.TryGetProperty("refusal", out var refusal) && refusal.ValueKind != JsonValueKind.Null))
+            using var body = JsonDocument.Parse(responseBody);
+            var candidate = body.RootElement.GetProperty("candidates")[0];
+            if (!string.Equals(candidate.GetProperty("finishReason").GetString(), "STOP",
+                    StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("Το μοντέλο δεν επέστρεψε ολοκληρωμένο διαγώνισμα.");
+            var parts = candidate.GetProperty("content").GetProperty("parts");
+            var json = string.Concat(parts.EnumerateArray()
+                .Where(part => part.TryGetProperty("text", out _) &&
+                    !(part.TryGetProperty("thought", out var thought) && thought.ValueKind == JsonValueKind.True))
+                .Select(part => part.GetProperty("text").GetString()));
             generated = JsonSerializer.Deserialize<ExamJsonResponseDto>(
-                result.GetProperty("content").GetString() ?? "null", JsonOptions)
+                json, JsonOptions)
                 ?? throw new InvalidDataException("Η απόκριση του μοντέλου είναι κενή.");
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or

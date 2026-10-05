@@ -95,7 +95,7 @@ export default function ExamForm({ onSubmit, isLoading = false, error, initialVa
     </label>
     {isDemo && <p className="rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">Σταθερό δείγμα με 25 μονάδες ανά θέμα. Η επιλογή θεμάτων εφαρμόζεται χωρίς αλλαγή βαθμολόγησης. Η ύλη, η δυσκολία και οι ειδικές οδηγίες θα χρησιμοποιηθούν όταν συνδεθεί η υπηρεσία παραγωγής.</p>}
     <Button type="submit" disabled={busy} className="w-full py-3">{busy ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> : <Sparkles size={16} aria-hidden="true" />}{busy ? 'Δημιουργία…' : 'Δημιουργία Διαγωνίσματος'}</Button>
-    <p role="status" className="sr-only">{busy ? 'Το διαγώνισμα δημιουργείται. Παρακαλώ περιμένετε.' : ''}</p>
+    {busy && <p role="status" className="text-xs leading-5 text-teal-800">Η παραγωγή μπορεί να διαρκέσει έως 4 λεπτά. Σε αυξημένο φόρτο δοκιμάζεται αυτόματα εναλλακτικό μοντέλο. Μπορείτε να περιμένετε εδώ.</p>}
     {(error || submitError) && <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs leading-5 text-red-800">{error || submitError}</p>}
   </form>
 }
