@@ -1,6 +1,8 @@
 import type { ExamTheme } from '../types/exam'
-import type { Statement } from '../interpreter/types'
+import type { Statement, ValueType } from '../interpreter/types'
 
+export type RubricKind = Statement['kind'] | 'functionCall' | 'arrayAccess' | 'arrayWrite' | 'accumulation' | 'subprogramParameters'
+export interface RubricCriterion { kind: RubricKind; points: number; subprogram?: string; variableName?: string; arrayName?: string; parameters?: { name?: string; type: ValueType; dimensions?: number[] }[] }
 export interface QuestionBase {
   id: string
   code: string
@@ -18,7 +20,7 @@ export type AssessmentQuestion =
   | (QuestionBase & { kind: 'fill'; accepted: string[] })
   | (QuestionBase & { kind: 'codeBlanks'; template: string; blanks: { id: string; accepted: string[] }[] })
   | (QuestionBase & { kind: 'trace'; columns: string[]; rowLabels: string[]; expected: string[][] })
-  | (QuestionBase & { kind: 'program'; referenceCode: string; gradingMode: 'runtime' | 'review'; testCases: ProgramTestCase[]; rubric: { kind: Statement['kind']; points: number }[] })
+  | (QuestionBase & { kind: 'program'; referenceCode: string; gradingMode: 'runtime' | 'review'; testCases: ProgramTestCase[]; previewCases?: ProgramTestCase[]; rubric: RubricCriterion[];fuzzSpecification?:import('./fuzzSpecification').FuzzSpecification })
   | (QuestionBase & { kind: 'open' })
 
 export interface ProgramTestCase { id: string; inputs: string[]; expectedOutput: string[] }
@@ -32,6 +34,9 @@ export interface ProgramCaseResult {
   passed: boolean
   actual: string[]
   error?: string
+  executedLines?: number[]
+  executedSubprograms?: string[]
+  metrics?: { comparisonsCount: number; assignmentsCount: number; loopIterations: number }
 }
 export interface QuestionResult {
   questionId: string

@@ -1,4 +1,6 @@
 import type { ExamJsonResponseDto, ExamTheme, GenerateExamRequest, SectionType, ExecutionTrace } from '../types/exam'
+import { ExecutionTraceSchema, GeneratedExamSchema } from '../assessment/examSchemas'
+import { parseBoundary } from '../assessment/schemas'
 import { createDemoExam, defaultCommand } from './sampleExam'
 
 const themeMap: Record<ExamTheme, SectionType> = {
@@ -15,15 +17,15 @@ function traceMarkdown(trace: ExecutionTrace, answers: boolean): string {
 /** Προσαρμογή του σταθερού δείγματος στο νέο συμβόλαιο, χωρίς παραγωγή από μοντέλο. */
 export function createStructuredSampleExam(request: GenerateExamRequest): ExamJsonResponseDto {
   const sample = createDemoExam(defaultCommand, request.includeThemes.map(theme => themeMap[theme]))
-  return {
+  return parseBoundary(GeneratedExamSchema,{
     title: sample.title,
     durationMinutes: 180,
     sections: sample.sections.map(section => ({
-      theme: (Object.keys(themeMap) as ExamTheme[]).find(theme => themeMap[theme] === section.sectionType)!,
+      theme: ({ ThemeA:'Θέμα Α', ThemeB:'Θέμα Β', ThemeC:'Θέμα Γ', ThemeD:'Θέμα Δ' }[section.sectionType]),
       totalMarks: section.totalMarks,
       questions: section.questions.map(question => {
         const match = /```glossa\n([\s\S]*?)```/.exec(question.contentMarkdown)
-        const trace = question.executionTraceJson ? JSON.parse(question.executionTraceJson) as ExecutionTrace : null
+        const trace = question.executionTraceJson ? parseBoundary(ExecutionTraceSchema,JSON.parse(question.executionTraceJson)) : null
         return {
           code: question.subTitle,
           questionText: question.contentMarkdown.replace(/```glossa\n[\s\S]*?```/, '').trim() + (trace ? traceMarkdown(trace, false) : ''),
@@ -33,5 +35,5 @@ export function createStructuredSampleExam(request: GenerateExamRequest): ExamJs
         }
       }),
     })),
-  }
+  })
 }

@@ -3,6 +3,8 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using AeppGenerator.Api.Controllers;
+using AeppGenerator.Api.Data;
+using System.Security.Claims;
 using AeppGenerator.Application.Exams;
 using AeppGenerator.Application.Llm;
 using AeppGenerator.Infrastructure.Llm;
@@ -33,12 +35,18 @@ var valid = JsonSerializer.Serialize(new
 });
 using var logs = LoggerFactory.Create(builder => builder.AddSimpleConsole(o => o.SingleLine = true));
 var settings = new LlmSettings { ApiKey = "test-only", Model = "primary", FallbackModels = ["fallback"], MaxRounds = 1 };
+var accounts = new AccountStore(Path.Combine(Directory.GetCurrentDirectory(), ".tmp", "review-checks-" + Guid.NewGuid().ToString("N"), "accounts.sqlite"));
+var testUser = await accounts.Register("checks@example.test", "test-only-not-a-login", "Δοκιμαστικός καθηγητής");
+accounts.PromoteTeacher(testUser.Email);
+var testIdentity = new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", testUser.Id), new Claim("role", "TEACHER")], "checks", "name", "role"));
 
 HttpClient Client(HttpMessageHandler handler) => new(handler)
     { BaseAddress = new Uri("https://generativelanguage.googleapis.com/"), Timeout = Timeout.InfiniteTimeSpan };
-ExamsController Controller(HttpClient http, LlmSettings config) => new(
-    new LlmExamGeneratorService(new GeminiClient(http, Options.Create(config), logs.CreateLogger<GeminiClient>()),
-        new TestEnvironment(sourceRoot))) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+ExamsController Controller(HttpClient http, LlmSettings config, LlmRetryHandler? handler = null) => new(
+    new FallbackExamGeneratorService(
+        new LlmExamGeneratorService(new GeminiClient(http, Options.Create(config), logs.CreateLogger<GeminiClient>(),
+            handler ?? new LlmRetryHandler((_, token) => { token.ThrowIfCancellationRequested(); return Task.CompletedTask; })),
+            new TestEnvironment(sourceRoot)), new LocalExamBank(), logs.CreateLogger<FallbackExamGeneratorService>()), accounts) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = testIdentity } } };
 void Check(bool condition, string name) { if (!condition) throw new Exception("FAILED: " + name); Console.WriteLine("PASS: " + name); }
 HttpResponseMessage Reply(int status, string body = "{}") => new((HttpStatusCode)status) { Content = new StringContent(body) };
 
@@ -64,41 +72,77 @@ if (args.Contains("--live") || args.Contains("--live-node"))
     return;
 }
 
-var calls = new List<string>();
-using (var http = Client(new Stub(async (message, ct) =>
+var waits = new List<TimeSpan>();
+var retry = new LlmRetryHandler((wait, token) => { token.ThrowIfCancellationRequested(); waits.Add(wait); return Task.CompletedTask; });
+var retryCalls = 0;
+try
 {
-    calls.Add(message.RequestUri!.AbsolutePath);
-    using var payload = JsonDocument.Parse(await message.Content!.ReadAsStringAsync(ct));
-    Check(payload.RootElement.GetProperty("generationConfig").GetProperty("responseFormat").GetProperty("text")
-        .GetProperty("mimeType").GetString() == "APPLICATION_JSON", "Gemini enum in serialized request");
-    return calls.Count == 1 ? Reply(503) : Reply(200, valid);
-})))
-{
-    var result = await Controller(http, settings).Generate(request, default);
-    Check(result.Result is OkObjectResult { Value: ExamDto { Sections.Count: 4 } }, "503 primary -> fallback -> validated ExamDto");
-    Check(calls.Count == 2 && calls[1].Contains("fallback"), "fallback selected");
+    await retry.ExecuteAsync<string>(_ => { retryCalls++; throw new HttpRequestException("test", null, HttpStatusCode.TooManyRequests); }, default);
+    throw new Exception("Failure swallowed");
 }
-foreach (var (provider, api, count) in new[] { (503, 503, 2), (429, 429, 1), (400, 502, 1), (403, 502, 1), (404, 502, 2) })
+catch (HttpRequestException) { }
+Check(retryCalls == 3 && waits.SequenceEqual(new[] { TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4) }), "two retries, exponential delays 2s / 4s");
+waits.Clear(); retryCalls = 0;
+var recovered = await retry.ExecuteAsync(_ => ++retryCalls == 1
+    ? Task.FromException<string>(new LlmTransientException(HttpStatusCode.ServiceUnavailable, TimeSpan.FromSeconds(7)))
+    : Task.FromResult("ok"), default);
+Check(recovered == "ok" && waits.Single() == TimeSpan.FromSeconds(7), "Retry-After respected");
+
+foreach (var status in new[] { 429, 503, 408, 500, 502, 504 })
 {
     var attempts = 0;
-    using var http = Client(new Stub((_, _) => { attempts++; return Task.FromResult(Reply(provider)); }));
+    using var http = Client(new Stub((_, _) => { attempts++; return Task.FromResult(Reply(status)); }));
     var result = await Controller(http, settings).Generate(request, default);
-    Check(result.Result is ObjectResult { Value: ProblemDetails p } && p.Status == api && attempts == count,
-        $"provider {provider} -> API {api}, {count} attempt(s)");
+    Check(result.Result is OkObjectResult { Value: ExamDto { GenerationSource: "examBank", Sections.Count: 4 } exam }
+        && exam.Sections.Sum(s => s.TotalMarks) == 100 && exam.FallbackMessage == LocalExamBank.Notification && attempts == 3,
+        $"provider {status} -> 3 attempts -> local exam / HTTP 200");
+}
+foreach (var status in new[] { 400, 401, 403, 404 })
+{
+    var attempts = 0;
+    using var http = Client(new Stub((_, _) => { attempts++; return Task.FromResult(Reply(status)); }));
+    var result = await Controller(http, settings).Generate(request, default);
+    Check(result.Result is ObjectResult { StatusCode: 502 } && attempts == 1, $"permanent {status}: no retry/fallback");
+}
+foreach (var firstStatus in new[] { 429, 503 })
+{
+    var attempts = 0;
+    using var http = Client(new Stub((_, _) => Task.FromResult(++attempts < 3 ? Reply(firstStatus) : Reply(200, valid))));
+    var result = await Controller(http, settings).Generate(request, default);
+    Check(result.Result is OkObjectResult { Value: ExamDto { GenerationSource: "ai", FallbackMessage: null } } && attempts == 3,
+        $"recovery after {firstStatus}: AI result, no fallback notification");
+}
+using (var http = Client(new Stub((_, _) => throw new HttpRequestException("network"))))
+{
+    Check((await Controller(http, settings).Generate(request, default)).Result is OkObjectResult { Value: ExamDto { GenerationSource: "examBank" } }, "network failure -> bank");
 }
 using (var http = Client(new Stub((_, _) => Task.FromResult(Reply(200, "{}")))))
 {
-    var result = await Controller(http, settings).Generate(request, default);
-    Check(result.Result is ObjectResult { StatusCode: 502 }, "malformed response rejected");
+    Check((await Controller(http, settings).Generate(request, default)).Result is ObjectResult { StatusCode: 502 }, "malformed response rejected");
 }
-using (var http = Client(new Stub(async (_, ct) => { await Task.Delay(Timeout.InfiniteTimeSpan, ct); return Reply(200); })))
+using (var http = Client(new Stub(async (_, token) => { await Task.Delay(Timeout.InfiniteTimeSpan, token); return Reply(200); })))
 {
     var budget = new LlmSettings { ApiKey = "test", Model = "primary", TotalTimeoutSeconds = 1 };
-    var result = await Controller(http, budget).Generate(request, default);
-    Check(result.Result is ObjectResult { StatusCode: 504 }, "total timeout -> 504");
+    Check((await Controller(http, budget).Generate(request, default)).Result is OkObjectResult { Value: ExamDto { GenerationSource: "examBank" } }, "total timeout -> bank");
     using var cancel = new CancellationTokenSource(); cancel.Cancel();
     try { await Controller(http, settings).Generate(request, cancel.Token); throw new Exception("Cancellation swallowed"); }
     catch (OperationCanceledException) { Console.WriteLine("PASS: caller cancellation propagated"); }
+}
+var timeoutAttempts = 0;
+using (var http = Client(new Stub((_, _) => { timeoutAttempts++; throw new TaskCanceledException("attempt timeout"); })))
+{
+    Check((await Controller(http, settings).Generate(request, default)).Result is OkObjectResult { Value: ExamDto { GenerationSource: "examBank" } }
+        && timeoutAttempts == 3, "per-attempt timeout retried twice then bank");
+}
+using (var http = Client(new Stub((_, _) => throw new Exception("Invalid request must not call API"))))
+{
+    Check((await Controller(http, settings).Generate(new GenerateExamRequest(), default)).Result is ObjectResult { StatusCode: 400 }, "invalid input remains 400");
+}
+using (var cancel = new CancellationTokenSource())
+{
+    var cancellationRetry = new LlmRetryHandler((_, _) => { cancel.Cancel(); return Task.FromCanceled(cancel.Token); });
+    try { await cancellationRetry.ExecuteAsync<string>(_ => throw new TimeoutException(), cancel.Token); throw new Exception("Cancellation swallowed"); }
+    catch (OperationCanceledException) { Console.WriteLine("PASS: cancellation during backoff propagated"); }
 }
 using (var http = Client(new Stub((_, _) =>
 {
@@ -107,11 +151,35 @@ using (var http = Client(new Stub((_, _) =>
     return Task.FromResult(response);
 })))
 {
-    var budget = new LlmSettings { ApiKey = "test", Model = "primary", TotalTimeoutSeconds = 1 };
     var watch = Stopwatch.StartNew();
-    var result = await Controller(http, budget).Generate(request, default);
-    Check(result.Result is ObjectResult { StatusCode: 504 } && watch.Elapsed.TotalSeconds < 5, "Retry-After bounded by total deadline");
+    var budget = new LlmSettings { ApiKey = "test", Model = "primary", TotalTimeoutSeconds = 1 };
+    var result = await Controller(http, budget, new LlmRetryHandler()).Generate(request, default);
+    Check(result.Result is OkObjectResult { Value: ExamDto { GenerationSource: "examBank" } } && watch.Elapsed.TotalSeconds < 5,
+        "real Retry-After delay bounded by deadline -> bank");
 }
+using (var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(50)))
+using (var http = Client(new Stub(async (_, token) => { await Task.Delay(Timeout.InfiniteTimeSpan, token); return Reply(200); })))
+{
+    try { await Controller(http, settings).Generate(request, cancel.Token); throw new Exception("Cancellation swallowed"); }
+    catch (OperationCanceledException) { Console.WriteLine("PASS: caller cancellation during HTTP propagated"); }
+}
+var bank = new LocalExamBank();
+foreach (var (topic, expected) in new[] { ("Δομές Επανάληψης", "selection-loops"), ("Πίνακες", "arrays-search-sort"), ("Υποπρογράμματα", "subprograms") })
+{
+    var exam = bank.GetExam(new GenerateExamRequest { TargetTopics = [topic] }, default);
+    Check(exam.BankExamId == expected && exam.Sections.SelectMany(s => s.Questions).Where(q => q.SubTitle.StartsWith("Γ") || q.SubTitle.StartsWith("Δ"))
+        .All(q => q.TestCases?.Count >= 2), "bank selection + test cases: " + topic);
+}
+for (var mask = 1; mask < 16; mask++)
+{
+    var themes = new[] { "Θέμα Α", "Θέμα Β", "Θέμα Γ", "Θέμα Δ" }.Where((_, index) => (mask & (1 << index)) != 0).Reverse().ToList();
+    var exam = bank.GetExam(new GenerateExamRequest { TargetTopics = ["Πίνακες"], IncludeThemes = themes }, default);
+    Check(exam.Sections.Count == themes.Count && exam.Sections.Sum(s => s.TotalMarks) == 100 &&
+        exam.Sections.All(s => s.Questions.Sum(q => q.Marks) == s.TotalMarks && s.Questions.All(q => q.Marks > 0)), "theme subset / 100 marks: " + mask);
+}
+var firstBankExam = bank.GetExam(request, default);
+firstBankExam.Sections[0].Questions.Clear();
+Check(bank.GetExam(request, default).Sections[0].Questions.Count > 0, "bank immutable across requests");
 
 var insightFixture = JsonSerializer.Serialize(new
 {
@@ -141,6 +209,33 @@ using (var http = Client(new Stub(async (message, ct) =>
     var invalidResult = await controller.Generate(new AssessmentInsightRequest([]), default);
     Check(invalidResult.Result is ObjectResult { StatusCode: 400 }, "assessment insight rejects empty report");
 }
+
+var reviewFixture = JsonSerializer.Serialize(new { efficiency = "Τα μετρικά αφορούν μία εκτέλεση.", algorithmicRisks = "Έλεγξε τον διαιρέτη πριν τη διαίρεση.", styleAndAeppRules = "Χρησιμοποίησε περιγραφικά ονόματα." });
+var reviewEnvelope = JsonSerializer.Serialize(new { candidates = new[] { new { finishReason = "STOP", content = new { parts = new[] { new { text = reviewFixture } } } } } });
+using (var http = Client(new Stub(async (message, ct) =>
+{
+    using var payload = JsonDocument.Parse(await message.Content!.ReadAsStringAsync(ct));
+    var schema = payload.RootElement.GetProperty("generationConfig").GetProperty("responseFormat").GetProperty("text").GetProperty("schema");
+    Check(schema.GetProperty("properties").TryGetProperty("efficiency", out _), "code review dedicated schema");
+    return Reply(200, reviewEnvelope);
+})))
+{
+    var service = new CodeReviewService(new GeminiClient(http, Options.Create(settings), logs.CreateLogger<GeminiClient>()));
+    var controller = new CodeReviewController(service);
+    var reviewRequest = new CodeReviewRequest { StudentCode = "ΠΡΟΓΡΑΜΜΑ Δοκιμή", Metrics = new CodeReviewMetrics { ComparisonsCount = 10, AssignmentsCount = 5, LoopIterations = 2 } };
+    Check((await controller.Review(reviewRequest, default)).Result is OkObjectResult { Value: CodeReviewResponse }, "structured Greek code review");
+    Check((await controller.Review(reviewRequest with { Metrics = reviewRequest.Metrics with { ComparisonsCount = -1 } }, default)).Result is ObjectResult { StatusCode: 400 }, "negative review metrics rejected");
+    Check((await controller.Review(reviewRequest with { StudentCode = new string('x', 12001) }, default)).Result is ObjectResult { StatusCode: 400 }, "oversized review code rejected");
+}
+using (var http = Client(new Stub((_, _) => Task.FromResult(Reply(200, "{\"candidates\":[]}")))))
+{
+    var controller = new CodeReviewController(new CodeReviewService(new GeminiClient(http, Options.Create(settings), logs.CreateLogger<GeminiClient>())));
+    var invalid = await controller.Review(new CodeReviewRequest { StudentCode = "κώδικας", Metrics = new CodeReviewMetrics { ComparisonsCount = 0, AssignmentsCount = 0, LoopIterations = 0 } }, default);
+    Check(invalid.Result is ObjectResult { StatusCode: 502 }, "malformed Gemini review rejected");
+}
+Check(typeof(CodeReviewController).IsDefined(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true), "code review requires authentication metadata");
+var limiter = (Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute?)Attribute.GetCustomAttribute(typeof(CodeReviewController), typeof(Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute));
+Check(limiter?.PolicyName == AeppGenerator.Api.Security.ApiRateLimiting.AiInsightsPolicy, "code review shares user rate and concurrency policy");
 
 sealed class Stub(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler
 {

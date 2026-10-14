@@ -1,28 +1,40 @@
 import { useRef, useState, type ReactNode } from 'react'
-import { Home, BookOpen, FileText, ClipboardCheck, Code, PenTool, LogOut, User, Menu, X } from 'lucide-react'
+import { Home, BookOpen, FileText, ClipboardCheck, Code, PenTool, User, Menu, X, Settings, CircleHelp } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import WorkspaceTabs, { isWorkspaceTab } from './WorkspaceTabs'
+import './workspace-shell.css'
+import './dashboard-polish.css'
+import UserMenu from '../../auth/UserMenu'
+import SettingsModal from '../../settings/SettingsModal'
 
-export type DashboardTab = 'home' | 'courses' | 'generator' | 'assessment' | 'interpreter' | 'whiteboard'
+export type DashboardTab = 'home' | 'courses' | 'generator' | 'assessment' | 'interpreter' | 'whiteboard' | 'daily' | 'leaderboard' | 'notes'
 
 interface DashboardLayoutProps {
   activeTab: DashboardTab
   onTabChange: (tab: DashboardTab) => void
   children: ReactNode
   onLogout?: () => void
+  zen?: boolean
+  gamificationWidget?: ReactNode
+  onStartDashboardTour?: () => void
 }
 
 const navigation = [
   { id: 'home', label: 'Αρχική', icon: Home },
-  { id: 'courses', label: 'Μαθήματα & Τεστ', icon: BookOpen },
+  { id: 'daily', label: 'Daily Challenge', icon: ClipboardCheck },
+  { id: 'leaderboard', label: 'Κατάταξη & Επιτεύγματα', icon: User },
+  { id: 'courses', label: 'Μαθήματα & Εξάσκηση', icon: BookOpen },
+  { id: 'notes', label: 'Οι Σημειώσεις μου', icon: BookOpen },
   { id: 'generator', label: 'Γεννήτρια Διαγωνισμάτων', icon: FileText },
   { id: 'assessment', label: 'Διαδραστικά Διαγωνίσματα', icon: ClipboardCheck },
   { id: 'interpreter', label: 'Διερμηνευτής ΓΛΩΣΣΑΣ', icon: Code },
   { id: 'whiteboard', label: 'Πίνακας & Διαγράμματα', icon: PenTool },
 ] as const
 
-export default function DashboardLayout({ activeTab, onTabChange, children, onLogout }: DashboardLayoutProps) {
+export default function DashboardLayout({ activeTab, onTabChange, children, gamificationWidget, onStartDashboardTour, zen = false }: DashboardLayoutProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const workspace = isWorkspaceTab(activeTab)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [logoutNotice, setLogoutNotice] = useState('')
   const menuButton = useRef<HTMLButtonElement>(null)
   const main = useRef<HTMLElement>(null)
 
@@ -32,28 +44,30 @@ export default function DashboardLayout({ activeTab, onTabChange, children, onLo
     main.current?.focus({ preventScroll: true })
   }
 
-  return <div className="min-h-screen bg-slate-50 text-slate-800">
+  return <div className={cn("dashboard-shell min-h-screen bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100", workspace && "workspace-shell", zen && "zen-shell")}>
+    <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     <a href="#dashboard-content" className="skip-link">Μετάβαση στο περιεχόμενο</a>
     <header className="app-header border-b border-slate-200 bg-white">
-      <div className="flex min-h-20 items-center justify-between gap-3 px-4 py-4 sm:px-6">
+      <div className="app-header-inner flex min-h-20 flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <button ref={menuButton} type="button" aria-label={menuOpen ? 'Κλείσιμο μενού' : 'Άνοιγμα μενού'} aria-expanded={menuOpen} aria-controls="dashboard-navigation" onClick={() => setMenuOpen(open => !open)} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 md:hidden">
+          <button ref={menuButton} type="button" aria-label={menuOpen ? 'Κλείσιμο μενού' : 'Άνοιγμα μενού'} aria-expanded={menuOpen} aria-controls="dashboard-navigation" onClick={() => setMenuOpen(open => !open)} className={cn("rounded-lg p-2 text-slate-600 hover:bg-slate-100", !workspace && "md:hidden")}>
             {menuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
           </button>
           <span className="hidden rounded-xl bg-blue-700 p-2.5 text-white min-[380px]:block"><BookOpen size={23} aria-hidden="true" /></span>
           <div><p className="text-sm font-bold tracking-tight sm:text-lg">ΑΕΠΠ <span className="font-normal text-blue-700">EduPlatform</span></p><p className="mt-0.5 hidden text-xs text-slate-500 sm:block">Ο χώρος του καθηγητή Πληροφορικής</p></div>
         </div>
-        <div className="flex shrink-0 items-center gap-3 sm:gap-4">
-          <div className="hidden text-right sm:block"><p className="text-sm font-semibold">Γρηγόρης Δίσκος</p><p className="mt-0.5 text-xs text-slate-500">Καθηγητής Πληροφορικής</p></div>
-          <span className="grid h-9 w-9 place-items-center rounded-full border border-blue-100 bg-blue-50 text-blue-700" role="img" aria-label="Γρηγόρης Δίσκος, Καθηγητής Πληροφορικής"><User size={19} aria-hidden="true" /></span>
-          <button type="button" onClick={() => onLogout ? onLogout() : setLogoutNotice('Η αποσύνδεση θα είναι διαθέσιμη όταν ενεργοποιηθούν οι λογαριασμοί χρηστών.')} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2.5 text-xs text-slate-600 hover:border-slate-300 hover:bg-slate-50" aria-label="Αποσύνδεση"><LogOut size={17} aria-hidden="true" /><span className="hidden lg:inline">Αποσύνδεση</span></button>
+        <div className="app-header-actions flex shrink-0 items-center gap-3 sm:gap-4">
+          {gamificationWidget}
+          {activeTab === 'home' && onStartDashboardTour && <button id="dashboard-guide-button" type="button" onClick={onStartDashboardTour} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800 transition-colors hover:bg-blue-100 sm:text-sm"><CircleHelp size={17} aria-hidden="true" />Οδηγός Χρήσης</button>}
+          <button type="button" aria-label="Ρυθμίσεις IDE" title="Ρυθμίσεις IDE" onClick={() => setSettingsOpen(true)} className="rounded-lg border border-slate-200 p-2.5 text-slate-600"><Settings size={20} aria-hidden="true" /></button>
+          <UserMenu />
         </div>
       </div>
-      <p role="status" className={cn('text-center text-xs text-slate-600', logoutNotice && 'border-t border-slate-100 px-4 py-3')}>{logoutNotice}</p>
     </header>
 
+    {workspace && <WorkspaceTabs activeTab={activeTab} onSelect={navigate} />}
     <div className="dashboard-body md:grid md:min-h-[calc(100vh-81px)] md:grid-cols-[250px_minmax(0,1fr)]">
-      <aside id="dashboard-navigation" className={cn('dashboard-navigation border-b border-slate-200 bg-white md:block md:border-r md:border-b-0', menuOpen ? 'block' : 'hidden')} onKeyDown={event => {
+      <aside id="dashboard-navigation" className={cn('dashboard-navigation border-b border-slate-200 bg-white md:block md:border-r md:border-b-0', menuOpen ? 'block' : 'hidden', workspace && !menuOpen && '!hidden')} onKeyDown={event => {
         if (event.key === 'Escape' && menuOpen) { setMenuOpen(false); menuButton.current?.focus() }
       }}>
         <div className="p-4 md:sticky md:top-0 md:py-7">

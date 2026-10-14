@@ -16,9 +16,10 @@ function wrappedLines(text: string, width: number): string[] {
   }).slice(0, 9)
 }
 
-export function FlowShape({ item, selected, onPointerDown, onDoubleClick }: {
+export function FlowShape({ item, selected, active = false, onPointerDown, onDoubleClick }: {
   item: ShapeItem
   selected: boolean
+  active?: boolean
   onPointerDown: (event: ReactPointerEvent<SVGGElement>) => void
   onDoubleClick: () => void
 }) {
@@ -30,11 +31,11 @@ export function FlowShape({ item, selected, onPointerDown, onDoubleClick }: {
     : `${x + w / 2},${y} ${x + w},${y + h / 2} ${x + w / 2},${y + h} ${x},${y + h / 2}`
   const lines = wrappedLines(item.text, kind === 'decision' ? w * .62 : w - 26)
   const lineHeight = 17
-  return <g className="wb-object" data-item-id={item.id} transform={`rotate(${item.rotation} ${x + w / 2} ${y + h / 2})`} onPointerDown={onPointerDown} onDoubleClick={onDoubleClick}>
+  return <g className={'wb-object' + (active ? ' wb-executing' : '')} data-node-id={item.nodeId} data-item-id={item.id} transform={`rotate(${item.rotation} ${x + w / 2} ${y + h / 2})`} onPointerDown={onPointerDown} onDoubleClick={onDoubleClick}>
     <title>{item.text || (kind === 'connector' ? 'Σημείο σύνδεσης' : kind)}</title>
     {kind === 'start' && <ellipse cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} fill={fill} stroke={stroke} strokeWidth="2" />}
     {(kind === 'io' || kind === 'decision') && <polygon points={polygon} fill={fill} stroke={stroke} strokeWidth="2" />}
-    {kind === 'process' && <rect x={x} y={y} width={w} height={h} rx="8" fill={fill} stroke={stroke} strokeWidth="2" />}
+    {(kind === 'process' || kind === 'subprogram') && <><rect x={x} y={y} width={w} height={h} rx={kind === 'subprogram' ? 0 : 8} fill={fill} stroke={stroke} strokeWidth="2" />{kind === 'subprogram' && <><line x1={x + 14} y1={y + 2} x2={x + 14} y2={y + h - 2} stroke={stroke} strokeWidth="2" /><line x1={x + w - 14} y1={y + 2} x2={x + w - 14} y2={y + h - 2} stroke={stroke} strokeWidth="2" /></>}</>}
     {kind === 'connector' && <circle cx={x + w / 2} cy={y + h / 2} r={Math.min(w, h) / 2} fill={fill} stroke={stroke} strokeWidth="2" />}
     {kind === 'note' && <rect x={x} y={y} width={w} height={h} rx="6" fill="#273752" stroke="#7ea6d8" strokeDasharray="5 4" />}
     {kind !== 'connector' && <text x={x + w / 2} y={y + h / 2 - (lines.length - 1) * lineHeight / 2} dominantBaseline="middle" textAnchor="middle" fill="#eaf3ff" fontSize="13" fontFamily="Segoe UI, sans-serif" style={{ pointerEvents: 'none' }}>{lines.map((line, index) => <tspan key={index} x={x + w / 2} dy={index ? lineHeight : 0}>{line}</tspan>)}</text>}
@@ -97,11 +98,11 @@ export function connectionPath(from: ShapeItem, to: ShapeItem, link?: FlowLink):
   return { path: orthogonal.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' '), label, points: orthogonal }
 }
 
-export function FlowConnection({ link, from, to, selected, onSelect }: { link: FlowLink; from: ShapeItem; to: ShapeItem; selected: boolean; onSelect: () => void }) {
+export function FlowConnection({ link, from, to, selected, onSelect, markerId = 'wb-arrowhead' }: { markerId?: string; link: FlowLink; from: ShapeItem; to: ShapeItem; selected: boolean; onSelect: () => void }) {
   const geometry = connectionPath(from, to, link)
   return <g onPointerDown={event => { event.stopPropagation(); onSelect() }} className="wb-connection">
     <path d={geometry.path} fill="none" stroke="transparent" strokeWidth="18" />
-    <path d={geometry.path} fill="none" stroke={selected ? '#fbbf24' : '#79aff3'} strokeWidth={selected ? 3.2 : 2.3} markerEnd="url(#wb-arrowhead)" />
+    <path d={geometry.path} fill="none" stroke={selected ? '#fbbf24' : '#79aff3'} strokeWidth={selected ? 3.2 : 2.3} markerEnd={'url(#' + markerId + ')'} />
     {link.label && <g><rect x={geometry.label.x - Math.max(31, link.label.length * 4.5)} y={geometry.label.y - 11} width={Math.max(62, link.label.length * 9)} height="22" rx="5" fill="#17243a" stroke="#395479" /><text x={geometry.label.x} y={geometry.label.y + 4} textAnchor="middle" fill="#dbeafe" fontSize="12">{link.label}</text></g>}
   </g>
 }

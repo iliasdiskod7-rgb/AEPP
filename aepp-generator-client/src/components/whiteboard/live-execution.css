@@ -1,0 +1,21 @@
+.wb-executing > rect,.wb-executing > polygon,.wb-executing > ellipse,.wb-executing > circle {stroke:#34d399;stroke-width:4;filter:drop-shadow(0 0 7px #34d399);animation:node-execution-pulse 1s ease-in-out infinite}
+@keyframes node-execution-pulse{50%{filter:drop-shadow(0 0 13px #60a5fa);stroke:#60a5fa}}
+.live-tools{min-width:0;padding:8px;color:var(--ink,#1e293b)}
+.live-tools>nav{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.live-tools button,.live-trace button{border:1px solid #64748b;border-radius:6px;padding:6px 9px;background:transparent;color:inherit}
+.live-tools button[aria-pressed=true]{background:#1e40af;color:white}
+.live-tools [hidden]{display:none!important}
+.live-tools p,.live-trace p{font-size:12px;margin:8px 0}
+.live-trace{padding:8px;min-width:0;color:inherit}
+.live-trace fieldset{border:1px solid #64748b;border-radius:6px;display:flex;flex-wrap:wrap;gap:8px;padding:8px}
+.live-trace label{font-size:12px;display:inline-flex;gap:4px;align-items:center}
+.live-trace-scroll{overflow:auto;max-height:420px;margin:8px 0;overscroll-behavior:contain}
+.live-trace table{border-collapse:collapse;font-size:12px;min-width:100%;color:inherit}
+.live-trace th,.live-trace td{border:1px solid #64748b;padding:6px;white-space:pre-wrap;min-width:55px;max-width:280px;overflow-wrap:anywhere}
+.live-trace th{position:sticky;top:0;background:#1e293b;color:#f8fafc}
+.live-trace .is-current{background:#1e40af;color:white}
+.live-trace nav{display:flex;align-items:center;gap:8px}
+.live-trace button:disabled{opacity:.4}
+@media(prefers-reduced-motion:reduce){.wb-executing>*{animation:none!important}}
+
+.live-board-link{margin-top:12px;font-size:12px;width:100%}

@@ -93,7 +93,7 @@ public sealed class LlmExamGeneratorService(
         return content;
     }
 
-    private static void ValidateResponse(ExamJsonResponseDto exam, GenerateExamRequest request)
+    internal static void ValidateResponse(ExamJsonResponseDto exam, GenerateExamRequest request)
     {
         var selected = Themes.Where(request.IncludeThemes.Contains).ToArray();
         if (string.IsNullOrWhiteSpace(exam.Title) || exam.DurationMinutes != 180 ||
@@ -123,7 +123,7 @@ public sealed class LlmExamGeneratorService(
         }
     }
 
-    private static ExamDto MapExam(ExamJsonResponseDto source, GenerateExamRequest request)
+    internal static ExamDto MapExam(ExamJsonResponseDto source, GenerateExamRequest request)
     {
         var now = DateTime.UtcNow;
         var year = now.Month >= 9 ? now.Year : now.Year - 1;
@@ -136,7 +136,7 @@ public sealed class LlmExamGeneratorService(
                     new QuestionItemDto(Guid.NewGuid(), sectionId, index + 1, question.Code,
                         question.QuestionText + (string.IsNullOrWhiteSpace(question.GlowCodeSnippet)
                             ? "" : "\n\n```glossa\n" + question.GlowCodeSnippet + "\n```"),
-                        question.SolutionText, question.Marks, null)).ToList());
+                        question.SolutionText, question.Marks, null, question.TestCases)).ToList());
         }).ToList();
         return new ExamDto(id, source.Title, $"{year}-{year + 1}", string.Join(", ", request.TargetTopics),
             request.Difficulty switch

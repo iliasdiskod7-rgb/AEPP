@@ -1,10 +1,10 @@
 export interface Point { x: number; y: number }
-export type ShapeKind = 'start' | 'io' | 'process' | 'decision' | 'connector' | 'note'
+export type ShapeKind = 'start' | 'io' | 'process' | 'subprogram' | 'decision' | 'connector' | 'note'
 export type DrawTool = ShapeKind | 'line' | 'arrow' | 'pencil' | 'highlighter' | 'table'
 export type Tool = DrawTool | 'select' | 'hand' | 'eraser'
 
 interface BaseItem { id: string; x: number; y: number; width: number; height: number; rotation: number }
-export interface ShapeItem extends BaseItem { type: 'shape'; kind: ShapeKind; text: string }
+export interface ShapeItem extends BaseItem { type: 'shape'; kind: ShapeKind; text: string; nodeId?: string; executionPhase?: import('../interpreter/types').NodeExecutionEvent['phase'] }
 export interface LineItem extends BaseItem { type: 'line'; arrow: boolean }
 export interface StrokeItem extends BaseItem { type: 'stroke'; points: Point[]; highlight: boolean }
 export interface ImageItem extends BaseItem { type: 'image'; src: string; alt: string }
@@ -13,7 +13,7 @@ export type BoardItem = ShapeItem | LineItem | StrokeItem | ImageItem | TableIte
 export type PortSide = 'top' | 'right' | 'bottom' | 'left'
 export interface LinkRoute { from: PortSide; to: PortSide; via?: Point[] }
 export interface FlowLink { id: string; from: string; to: string; label: string; route?: LinkRoute }
-export interface BoardDocument { version: 1; items: BoardItem[]; links: FlowLink[] }
+export interface BoardDocument { version: 1; executionSource?: string; items: BoardItem[]; links: FlowLink[] }
 
 export const emptyBoard = (): BoardDocument => ({ version: 1, items: [], links: [] })
 export const newId = () => crypto.randomUUID()

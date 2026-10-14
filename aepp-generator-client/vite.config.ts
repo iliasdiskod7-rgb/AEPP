@@ -6,6 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     plugins: [react(), tailwindcss()],
+    build: { emptyOutDir: true },
     server: {
       proxy: {
         '/api': { target: env.API_PROXY_TARGET || 'http://localhost:5210', changeOrigin: true },

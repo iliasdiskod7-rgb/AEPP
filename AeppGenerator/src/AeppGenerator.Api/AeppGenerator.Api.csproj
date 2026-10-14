@@ -3,11 +3,16 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>AeppGenerator.Api-LocalDevelopment</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.*" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.*" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
@@ -16,4 +21,9 @@
     <ProjectReference Include="..\AeppGenerator.Application\AeppGenerator.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="../../../aepp-generator-client/src/assessment/practice-exam.json" LogicalName="AeppGenerator.PracticeExam" />
+    <EmbeddedResource Include="Data/schema.sql" LogicalName="AeppGenerator.AccountSchema" />
+    <EmbeddedResource Include="../../../aepp-generator-client/src/gamification/challenge-bank.json" LogicalName="AeppGenerator.DailyChallengeBank" />
+  </ItemGroup>
 </Project>

@@ -9,12 +9,26 @@ export interface GenerateExamRequest {
   customInstructions: string | null
 }
 
+export interface ExamTestCase {
+  id: string
+  inputs: string[]
+  expectedOutput: string[]
+}
+
+export interface GenerationMetadata {
+  generationSource?: 'ai' | 'examBank'
+  fallbackMessage?: string | null
+  fallbackDetails?: string | null
+  bankExamId?: string | null
+}
+
 export interface QuestionDto {
   code: string
   questionText: string
   glowCodeSnippet: string | null
   solutionText: string
   marks: number
+  testCases?: ExamTestCase[]
 }
 
 export interface ExamSectionDto {
@@ -23,7 +37,7 @@ export interface ExamSectionDto {
   questions: QuestionDto[]
 }
 
-export interface ExamJsonResponseDto {
+export interface ExamJsonResponseDto extends GenerationMetadata {
   title: string
   durationMinutes: number
   sections: ExamSectionDto[]
@@ -42,6 +56,7 @@ export interface QuestionItem {
   solutionMarkdown: string
   marks: number
   executionTraceJson: string | null
+  testCases?: ExamTestCase[] | null
 }
 
 export interface ExamSection {
@@ -54,7 +69,7 @@ export interface ExamSection {
 }
 export type Section = ExamSection
 
-export interface Exam {
+export interface Exam extends GenerationMetadata {
   id: string
   title: string
   academicYear: string

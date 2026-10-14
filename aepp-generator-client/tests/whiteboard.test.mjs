@@ -4,7 +4,9 @@ import { createServer } from 'vite'
 
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
 after(() => server.close())
-const { flowchartFromCode } = await server.ssrLoadModule('/src/whiteboard/flowchart.ts')
+const { flowchartFromCode, expressionText } = await server.ssrLoadModule('/src/whiteboard/flowchart.ts')
+const { parseProgram } = await server.ssrLoadModule('/src/interpreter/parser.ts')
+const { Interpreter } = await server.ssrLoadModule('/src/interpreter/runtime.ts')
 const { connectionPath } = await server.ssrLoadModule('/src/components/whiteboard/FlowShape.tsx')
 const { ensureOutputColumn, moveItem, tableDimensions } = await server.ssrLoadModule('/src/whiteboard/model.ts')
 
@@ -97,4 +99,91 @@ test('η ΕΞΟΔΟΣ παραμένει μοναδική και τελευτα�
   assert.deepEqual(fixed.columns, ['Χ', 'ΕΞΟΔΟΣ'])
   assert.deepEqual(fixed.rows, [['2', '5']])
   assert.deepEqual([fixed.width, fixed.height], [456, 84])
+})
+
+test('η ΚΑΛΕΣΕ εμφανίζεται ως προκαθορισμένη επεξεργασία', () => {
+  const board = flowchartFromCode(`ΠΡΟΓΡΑΜΜΑ Α
+ΑΡΧΗ
+  ΚΑΛΕΣΕ Βοηθεια(1)
+ΤΕΛΟΣ_ΠΡΟΓΡΑΜΜΑΤΟΣ
+ΔΙΑΔΙΚΑΣΙΑ Βοηθεια(Χ)
+ΜΕΤΑΒΛΗΤΕΣ
+  ΑΚΕΡΑΙΕΣ: Χ
+ΑΡΧΗ
+  ΓΡΑΨΕ Χ
+ΤΕΛΟΣ_ΔΙΑΔΙΚΑΣΙΑΣ`)
+  assert.equal(board.items.find(item => item.kind === 'subprogram').text, 'ΚΑΛΕΣΕ ΒΟΗΘΕΙΑ(1)')
+})
+
+
+const expressionProgram = body => 'ΠΡΟΓΡΑΜΜΑ Παρενθεσεις\nΜΕΤΑΒΛΗΤΕΣ\nΠΡΑΓΜΑΤΙΚΕΣ: X, Y, A, B, C, D\nΑΚΕΡΑΙΕΣ: Π[10], Ι\nΑΡΧΗ\n' + body + '\nΤΕΛΟΣ_ΠΡΟΓΡΑΜΜΑΤΟΣ'
+const parseExpression = text => parseProgram(expressionProgram('ΓΡΑΨΕ ' + text)).body[0].expressions[0]
+const expressionStructure = expression => JSON.parse(JSON.stringify(expression, (key, value) => ['line', 'column', 'nodeId'].includes(key) ? undefined : value))
+
+test('παραλληλόγραμμο εξόδου διατηρεί (2 + 3) * 4', () => {
+  const board = flowchartFromCode(expressionProgram('ΓΡΑΨΕ (2 + 3) * 4'))
+  assert.equal(board.items.find(item => item.kind === 'io').text, 'ΓΡΑΨΕ (2 + 3) * 4')
+})
+test('ορθογώνιο εκχώρησης διατηρεί παρενθέσεις αριθμητή και παρονομαστή', () => {
+  const board = flowchartFromCode(expressionProgram('X <- (A + B) / (C - D)'))
+  assert.equal(board.items.find(item => item.kind === 'process').text, 'X <- (A + B) / (C - D)')
+})
+test('ρόμβος διατηρεί ευδιάκριτες ομαδοποιημένες συγκρίσεις', () => {
+  const board = flowchartFromCode(expressionProgram('ΑΝ (X > 0) ΚΑΙ (Y = 5) ΤΟΤΕ\nΓΡΑΨΕ X\nΤΕΛΟΣ_ΑΝ'))
+  assert.equal(board.items.find(item => item.kind === 'decision').text, '(X > 0) ΚΑΙ (Y = 5)')
+})
+test('ισόβαθμοι τελεστές και δυνάμεις διατηρούν την πλευρά ομαδοποίησης', () => {
+  for (const text of ['A - (B - C)', 'A / (B / C)', 'A * (B / C)', '(A ^ B) ^ C', 'A + (B + C)']) {
+    assert.equal(expressionText(parseExpression(text)), text)
+  }
+  assert.equal(expressionText(parseExpression('A ^ (B ^ C)')), 'A ^ B ^ C')
+  assert.equal(expressionText(parseExpression('A + B * C')), 'A + B * C')
+})
+test('πρόσημα και ΟΧΙ διατηρούν τη δέσμευση της εσωτερικής έκφρασης', () => {
+  assert.equal(expressionText(parseExpression('-(A + B)')), '-(A + B)')
+  assert.equal(expressionText(parseExpression('(-2) ^ 2')), '(-2) ^ 2')
+  assert.equal(expressionText(parseExpression('ΟΧΙ (X > 0 ΚΑΙ Y = 5)')), 'ΟΧΙ ((X > 0) ΚΑΙ (Y = 5))')
+})
+test('ΟΣΟ, ΜΕΧΡΙΣ_ΟΤΟΥ, δείκτες πινάκων και ορίσματα χρησιμοποιούν τον ίδιο printer', () => {
+  const board = flowchartFromCode(expressionProgram('ΟΣΟ (X + Y) * 2 > 0 ΕΠΑΝΑΛΑΒΕ\nΓΡΑΨΕ Π[(1 + 2) * 3]\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΑΡΧΗ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Α_Μ((2 + 3) * 4)\nΜΕΧΡΙΣ_ΟΤΟΥ ΟΧΙ (X > 0 ΚΑΙ Y = 5)'))
+  assert.ok(board.items.some(item => item.kind === 'decision' && item.text === '(X + Y) * 2 > 0'))
+  assert.ok(board.items.some(item => item.kind === 'decision' && item.text === 'ΟΧΙ ((X > 0) ΚΑΙ (Y = 5))'))
+  assert.ok(board.items.some(item => item.kind === 'io' && item.text === 'ΓΡΑΨΕ Π[(1 + 2) * 3]'))
+  assert.ok(board.items.some(item => item.kind === 'io' && item.text === 'ΓΡΑΨΕ Α_Μ((2 + 3) * 4)'))
+})
+test('εκτύπωση και νέα ανάλυση παράγουν το ίδιο AST σε αριθμητικές και λογικές εκφράσεις', () => {
+  const cases = [
+    '(2 + 3) * 4', '2 * (3 + 4)', '20 - (5 - 2)', '20 / (5 / 2)',
+    '20 DIV (5 MOD 3)', '20 MOD (5 DIV 2)', '2 + (3 + 4)', '2 * (3 * 4)',
+    '(2 ^ 3) ^ 2', '2 ^ (3 ^ 2)', '-(2 + 3)', '(-2) ^ 2', '-(2 ^ 2)', '2 ^ (-3)',
+    'ΟΧΙ (X > 0 ΚΑΙ Y = 5)', '(X > 0) ΚΑΙ (Y = 5)',
+    '(X = 0 Η Y = 5) ΚΑΙ X < 10', 'ΟΧΙ (ΟΧΙ ΑΛΗΘΗΣ)',
+    'ΟΧΙ (ΑΛΗΘΗΣ ΚΑΙ ΨΕΥΔΗΣ)', '(ΟΧΙ ΑΛΗΘΗΣ) = ΨΕΥΔΗΣ',
+    'Π[(1 + 2) * 3]', 'Α_Μ((2 + 3) * 4)', "'α\'\'β'", 'ΑΛΗΘΗΣ',
+  ]
+  for (const source of cases) {
+    const original = parseExpression(source)
+    const printed = expressionText(original)
+    assert.deepEqual(expressionStructure(parseExpression(printed)), expressionStructure(original), source + ' -> ' + printed)
+  }
+})
+test('εκτυπωμένες αριθμητικές εκφράσεις εκτελούνται με την ίδια τιμή', () => {
+  const result = text => {
+    const iterator = new Interpreter(parseProgram(expressionProgram('ΓΡΑΨΕ ' + text))).execute()
+    let next = iterator.next()
+    while (!next.done) { if (next.value.kind === 'done') return next.value.output; next = iterator.next() }
+    throw new Error('Η δοκιμή δεν ολοκληρώθηκε.')
+  }
+  for (const source of ['(2 + 3) * 4', '20 - (5 - 2)', '20 / (5 / 2)', '(2 ^ 3) ^ 2', '(-2) ^ 2']) {
+    assert.deepEqual(result(expressionText(parseExpression(source))), result(source))
+  }
+  assert.deepEqual(result(expressionText(parseExpression('(2 + 3) * 4'))), ['20'])
+})
+
+test('διάγραμμα ΕΠΙΛΕΞΕ έχει selector μία φορά, όλες τις περιπτώσεις και έγκυρες συνδέσεις',()=>{
+ const board=flowchartFromCode("ΠΡΟΓΡΑΜΜΑ Δοκιμη\nΜΕΤΑΒΛΗΤΕΣ\nΑΚΕΡΑΙΕΣ: Χ\nΑΡΧΗ\nΔΙΑΒΑΣΕ Χ\nΕΠΙΛΕΞΕ Χ+1\nΠΕΡΙΠΤΩΣΗ 1,2\nΓΡΑΨΕ 3\nΠΕΡΙΠΤΩΣΗ 3..10\nΓΡΑΨΕ 4\nΠΕΡΙΠΤΩΣΗ ΑΛΛΙΩΣ\nΓΡΑΨΕ 5\nΤΕΛΟΣ_ΕΠΙΛΟΓΩΝ\nΤΕΛΟΣ_ΠΡΟΓΡΑΜΜΑΤΟΣ")
+ assert.equal(board.items.filter(item=>item.text.includes('υπολογισμός μία φορά')).length,1)
+ assert.equal(board.items.filter(item=>item.kind==='decision').length,2)
+ assert.ok(board.items.some(item=>item.text.includes('[3 .. 10]')))
+ const ids=new Set(board.items.map(item=>item.id));assert.ok(board.links.every(link=>ids.has(link.from)&&ids.has(link.to)))
 })

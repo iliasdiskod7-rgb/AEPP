@@ -46,4 +46,7 @@ public sealed class QuestionDto
 
     [JsonPropertyName("marks")]
     public required int Marks { get; init; }
+
+    [JsonPropertyName("testCases")]
+    public List<AeppGenerator.Application.Exams.ExamTestCaseDto>? TestCases { get; init; }
 }

@@ -27,3 +27,6 @@
 /Create-AeppGenerator.ps1
 /dotnet-commands.txt
 **/preview.jpg
+
+# Μόνιμη μαθητική πρόοδος (τοπικά δεδομένα)
+**/App_Data/

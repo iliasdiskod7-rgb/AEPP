@@ -1,30 +1,40 @@
 import { parseProgram } from '../interpreter/parser'
 import { Interpreter, parseInput } from '../interpreter/runtime'
+import type { ExecutionMetrics } from '../interpreter/runtime'
 import type { ProgramTestCase } from './model'
 
-export interface ExecutionResult { output: string[]; inputsUsed: number; error?: string }
+export interface ExecutionResult { output: string[]; inputsUsed: number; error?: string; executedLines?: number[]; executedSubprograms?: string[]; inputNames?: string[]; metrics: ExecutionMetrics }
 const MAX_EVENTS = 120_000
 
 /** Εκτελείται σε Web Worker στη διεπαφή, ώστε ένας βρόχος να μην παγώνει τον επεξεργαστή. */
 export function executeSource(source: string, inputs: string[]): ExecutionResult {
   let used = 0
+  const inputNames: string[] = []
+  const lines = new Set<number>(), scopes = new Set<string>()
+  let interpreter: Interpreter | undefined
+  const finish = (result: Omit<ExecutionResult, 'executedLines' | 'executedSubprograms' | 'inputNames' | 'metrics'>): ExecutionResult => ({
+    ...result, executedLines: [...lines], executedSubprograms: [...scopes], inputNames, metrics: interpreter?.metrics ?? { comparisonsCount: 0, assignmentsCount: 0, loopIterations: 0 },
+  })
   try {
-    const iterator = new Interpreter(parseProgram(source)).execute()
+    interpreter = new Interpreter(parseProgram(source))
+    const iterator = interpreter.execute()
     let next = iterator.next()
     let events = 0
     while (!next.done) {
-      if (++events > MAX_EVENTS) return { output: [], inputsUsed: used, error: 'Ξεπεράστηκε το όριο βημάτων εκτέλεσης.' }
+      if (++events > MAX_EVENTS) return finish({ output: [], inputsUsed: used, error: 'Ξεπεράστηκε το όριο βημάτων εκτέλεσης.' })
       const event = next.value
+      if (event.kind !== 'done') { lines.add(event.line); if (event.nodeExecution) lines.add(event.nodeExecution.originLine); if (event.scopeName) scopes.add(event.scopeName) }
       if (event.kind === 'input') {
-        if (used >= inputs.length) return { output: event.output, inputsUsed: used, error: `Λείπει τιμή εισόδου για τη μεταβλητή ${event.name}.` }
+        inputNames.push(event.name)
+        if (used >= inputs.length) return finish({ output: event.output, inputsUsed: used, error: `Λείπει τιμή εισόδου για τη μεταβλητή ${event.name}.` })
         const value = parseInput(inputs[used++], event.type, event.line)
         next = iterator.next(value)
-      } else if (event.kind === 'done') return { output: event.output, inputsUsed: used }
+      } else if (event.kind === 'done') return finish({ output: event.output, inputsUsed: used })
       else next = iterator.next()
     }
-    return { output: [], inputsUsed: used }
+    return finish({ output: [], inputsUsed: used })
   } catch (cause) {
-    return { output: [], inputsUsed: used, error: cause instanceof Error ? cause.message : 'Άγνωστο σφάλμα εκτέλεσης.' }
+    return finish({ output: [], inputsUsed: used, error: cause instanceof Error ? cause.message : 'Άγνωστο σφάλμα εκτέλεσης.' })
   }
 }
 
@@ -37,6 +47,8 @@ export function runTestCases(source: string, cases: ProgramTestCase[]) {
       result.output.every((line, index) => comparable(line) === comparable(test.expectedOutput[index]))
     return {
       id: test.id, passed, actual: result.output,
+      executedLines: result.executedLines, executedSubprograms: result.executedSubprograms,
+      metrics: result.metrics,
       error: result.error ?? (result.inputsUsed !== test.inputs.length ? 'Το πρόγραμμα δεν κατανάλωσε όλα τα δεδομένα εισόδου.' : undefined),
     }
   })

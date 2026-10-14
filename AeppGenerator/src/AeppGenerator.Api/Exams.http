@@ -1,0 +1,11 @@
+@baseUrl = http://localhost:5210
+@token = replace-with-a-valid-access-token
+
+### Select a random model exam; solution keys and hidden test inputs are omitted
+GET {{baseUrl}}/api/exams/random
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### The same endpoint requires authentication
+GET {{baseUrl}}/api/exams/random
+Accept: application/json

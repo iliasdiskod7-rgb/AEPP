@@ -5,7 +5,9 @@ namespace AeppGenerator.Application.Exams;
 public sealed record ExamDto(
     Guid Id, string Title, string AcademicYear, string TargetTopic,
     Difficulty Difficulty, DateTime CreatedAt, List<ExamSectionDto> Sections,
-    int DurationMinutes = 180);
+    int DurationMinutes = 180,
+    string GenerationSource = "ai", string? FallbackMessage = null,
+    string? FallbackDetails = null, string? BankExamId = null);
 
 public sealed record ExamSectionDto(
     Guid Id, Guid ExamId, SectionType SectionType, string Title,
@@ -14,4 +16,6 @@ public sealed record ExamSectionDto(
 public sealed record QuestionItemDto(
     Guid Id, Guid SectionId, int OrderIndex, string SubTitle,
     string ContentMarkdown, string SolutionMarkdown, int Marks,
-    string? ExecutionTraceJson);
+    string? ExecutionTraceJson, List<ExamTestCaseDto>? TestCases = null);
+
+public sealed record ExamTestCaseDto(string Id, List<string> Inputs, List<string> ExpectedOutput);

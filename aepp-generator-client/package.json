@@ -9,7 +9,24 @@
     "test:interpreter": "node --test tests/interpreter.test.mjs",
     "test:whiteboard": "node --test tests/whiteboard.test.mjs",
     "test:assessment": "node --test tests/assessment.test.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:exam-bank": "node --test tests/exam-bank.test.mjs",
+    "test:memory": "node --test tests/memory.test.mjs",
+    "test:gamification": "node --test tests/gamification.test.mjs",
+    "test:patterns": "node --test tests/patterns.test.mjs",
+    "test:learn": "node --test tests/learn.test.mjs",
+    "test:workspace": "node --test tests/workspace.test.mjs",
+    "test:settings": "node --test tests/settings.test.mjs",
+    "test:auth": "node --test tests/auth.test.mjs",
+    "test:auth:integration": "node --test tests/auth.integration.mjs",
+    "test:attempts": "node --test tests/attempts.test.mjs",
+    "test:live-execution": "node --test tests/live-execution.test.mjs",
+    "test:debugger": "node --test tests/debugger.test.mjs",
+    "test:counterexamples": "node --test tests/counterexamples.test.mjs",
+    "test:loops": "node --test tests/loops.test.mjs",
+    "test:notes": "node --test tests/notes.test.mjs",
+    "test:notes:integration": "node --test tests/notes.integration.mjs",
+    "test:dashboard": "node --test tests/dashboard.test.mjs"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -25,11 +42,13 @@
     "@tanstack/react-query": "^5.104.1",
     "axios": "^1.20.0",
     "clsx": "^2.1.1",
+    "framer-motion": "^14.1.0",
     "lucide-react": "^1.51.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.5"
   }
 }

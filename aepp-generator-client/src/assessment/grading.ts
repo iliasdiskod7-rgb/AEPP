@@ -1,7 +1,8 @@
 import { parseProgram } from '../interpreter/parser'
-import { normalize, type Statement } from '../interpreter/types'
-import type { AnswerSheet, AnswerValue, AssessmentExam, AssessmentQuestion, AssessmentReport, ProgramCaseResult, ProgramTestCase, QuestionResult, SectionResult } from './model'
-import { validateAssessmentExam } from './practiceExam'
+import { normalize } from '../interpreter/types'
+import type { AnswerValue, AssessmentQuestion, AssessmentReport, ProgramCaseResult, ProgramTestCase, QuestionResult, SectionResult } from './model'
+import { AssessmentExamSchema, AnswerSheetSchema, ProgramCaseResultsSchema, parseBoundary } from './schemas'
+import { evaluateStructure } from './structuralGrading'
 
 export type ProgramRunner = (source: string, cases: ProgramTestCase[]) => Promise<ProgramCaseResult[]>
 const round = (value: number) => Math.round(value * 100) / 100
@@ -11,24 +12,6 @@ const asText = (answer: AnswerValue | undefined) => typeof answer === 'string' ?
 const asRows = (answer: AnswerValue | undefined): string[][] => Array.isArray(answer) ? answer : []
 const points = (correct: number, total: number, max: number) => round(max * correct / total)
 
-function structureScore(source: string, rubric: Extract<AssessmentQuestion, { kind: 'program' }>['rubric']): { marks: number; note: string; astSummary: string } {
-  try {
-    const program = parseProgram(source)
-    const found = new Set<Statement['kind']>()
-    const visit = (statements: Statement[]) => {
-      for (const statement of statements) {
-        found.add(statement.kind)
-        if (statement.kind === 'if') { statement.branches.forEach(branch => visit(branch.body)); visit(statement.otherwise) }
-        else if ('body' in statement) visit(statement.body)
-      }
-    }
-    visit(program.body)
-    const marks = rubric.reduce((sum, criterion) => sum + (found.has(criterion.kind) ? criterion.points : 0), 0)
-    return { marks, note: `Δομικά κριτήρια από το συντακτικό δέντρο: ${marks}/${rubric.reduce((sum, item) => sum + item.points, 0)}.`, astSummary: [...found].join(', ') }
-  } catch (cause) {
-    return { marks: 0, note: `Δεν ολοκληρώθηκε η συντακτική ανάλυση: ${cause instanceof Error ? cause.message : 'άγνωστο σφάλμα'}`, astSummary: '' }
-  }
-}
 
 function shortResult(question: AssessmentQuestion, correct: number, total: number, studentAnswer: string, expectedAnswer: string): QuestionResult {
   const earned = points(correct, total, question.marks)
@@ -79,28 +62,34 @@ async function gradeQuestion(question: AssessmentQuestion, answer: AnswerValue |
   const source = asText(answer)
   if (question.gradingMode === 'review') return {
     questionId: question.id, code: question.code, earned: 0, pending: question.marks, max: question.marks,
-    feedback: 'Η τρέχουσα έκδοση του διερμηνευτή δεν εκτελεί πίνακες και υποπρογράμματα. Η βαθμολόγηση μένει σε εκκρεμότητα για τον καθηγητή.',
+    feedback: 'Δεν έχουν δοθεί δομημένες δοκιμές και κριτήρια για αυτό το θέμα. Η βαθμολόγηση μένει σε εκκρεμότητα για τον καθηγητή.',
     studentAnswer: source || 'Δεν δόθηκε πρόγραμμα.', expectedAnswer: question.solution, chapter: question.chapter,
     studentCode: source, referenceCode: question.referenceCode,
   }
   if (!source.trim()) return { questionId: question.id, code: question.code, earned: 0, pending: 0, max: question.marks,
     feedback: 'Δεν δόθηκε πρόγραμμα.', studentAnswer: 'Δεν δόθηκε πρόγραμμα.', expectedAnswer: question.solution, chapter: question.chapter,
     studentCode: '', referenceCode: question.referenceCode }
-  const structure = structureScore(source, question.rubric)
-  let cases: ProgramCaseResult[] = []
-  let executionError = ''
-  try { cases = await runProgram(source, question.testCases) }
-  catch (cause) { executionError = cause instanceof Error ? cause.message : 'Η εκτέλεση δεν ολοκληρώθηκε.' }
-  const passed = cases.filter(test => test.passed).length
-  const structureMaximum = question.rubric.reduce((sum, item) => sum + item.points, 0)
-  const testMaximum = question.marks - structureMaximum
-  const earned = executionError ? round(structure.marks) : round(points(passed, question.testCases.length, testMaximum) + structure.marks)
-  const firstFailure = cases.find(test => !test.passed)
-  const feedback = `${passed}/${question.testCases.length} δοκιμές επιτυχείς. ${structure.note}` +
-    (executionError ? ` ${executionError}` : firstFailure?.error ? ` ${firstFailure.error}` : '')
-  return { questionId: question.id, code: question.code, earned, pending: 0, max: question.marks,
-    feedback, studentAnswer: source, expectedAnswer: question.solution, chapter: question.chapter,
-    programCases: cases, studentCode: source, referenceCode: question.referenceCode, astSummary: structure.astSummary }
+  return evaluateCodeSubmission(question,source,runProgram)
+}
+
+export async function evaluateCodeSubmission(question: Extract<AssessmentQuestion,{kind:'program'}>,source: string,runProgram: ProgramRunner): Promise<QuestionResult> {
+ const base = { questionId: question.id,code: question.code,max: question.marks,pending: 0,studentAnswer: source || 'Δεν δόθηκε πρόγραμμα.',expectedAnswer: question.solution,chapter: question.chapter,studentCode: source,referenceCode: question.referenceCode }
+ if(question.gradingMode==='review')return {...base,earned:0,pending:question.marks,feedback:'Απαιτείται αξιολόγηση από καθηγητή.'}
+ if(!source.trim())return {...base,earned:0,feedback:'Δεν δόθηκε πρόγραμμα.'}
+ let program
+ try { program=parseProgram(source) } catch(cause) { return {...base,earned:0,feedback:'Δεν ολοκληρώθηκε η συντακτική ανάλυση: '+(cause instanceof Error?cause.message:'άγνωστο σφάλμα')} }
+ let cases: ProgramCaseResult[]=[]
+ try {
+  cases=parseBoundary(ProgramCaseResultsSchema,await runProgram(source,question.testCases))
+  const ids=new Set(question.testCases.map(test=>test.id))
+  if(new Set(cases.map(test=>test.id)).size!==cases.length||cases.some(test=>!ids.has(test.id)))throw new Error('Μη έγκυρα αναγνωριστικά δοκιμών.')
+ } catch(cause) { return {...base,earned:0,feedback:cause instanceof Error?cause.message:'Η εκτέλεση δεν ολοκληρώθηκε.'} }
+ const structure=evaluateStructure(program,cases,question.rubric)
+ const passed=cases.filter(test=>test.passed&&!test.error).length
+ const functional=question.testCases.length?passed/question.testCases.length:0
+ const earned=round(question.marks*(0.6*functional+0.4*structure.ratio))
+ const feedback=passed+'/'+question.testCases.length+' δοκιμές επιτυχείς. Λειτουργικότητα (60%): '+round(question.marks*0.6*functional)+'. Δομή (40%): '+round(question.marks*0.4*structure.ratio)+'. '+structure.results.map(result=>result.kind+': '+(result.met?'εντοπίστηκε':'δεν τεκμηριώθηκε')).join(', ')
+ return {...base,earned,feedback,programCases:cases,astSummary:structure.astSummary}
 }
 
 function summarize(title: string, sections: SectionResult[]): AssessmentReport {
@@ -114,8 +103,9 @@ function summarize(title: string, sections: SectionResult[]): AssessmentReport {
   return { title, earned, pending, max: 100, grade20: round(earned / 5), sections, recommendations }
 }
 
-export async function gradeAssessment(exam: AssessmentExam, answers: AnswerSheet, runProgram: ProgramRunner): Promise<AssessmentReport> {
-  validateAssessmentExam(exam)
+export async function gradeAssessment(examInput: unknown, answerInput: unknown, runProgram: ProgramRunner): Promise<AssessmentReport> {
+  const exam = parseBoundary(AssessmentExamSchema,examInput)
+  const answers = parseBoundary(AnswerSheetSchema,answerInput)
   const sections: SectionResult[] = []
   for (const section of exam.sections) {
     const questions = []

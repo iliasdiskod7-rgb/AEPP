@@ -1,0 +1,56 @@
+/* Shared surfaces work in the top layer too: native dialogs inherit root tokens. */
+:is(dialog, [role="dialog"], [role="tooltip"], .theme-overlay) {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.dashboard-shell { background-color: var(--bg-primary); color: var(--text-primary); }
+.responsive-ide {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.responsive-ide :is(.ide-workspace-toolbar, .ide-panel-heading, .ide-status-bar, .ide-dock-heading) {
+  background: var(--bg-surface-muted);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.responsive-ide dialog { background: var(--bg-surface); color: var(--text-primary); }
+.responsive-ide :is(.ide-panel-controls button, .ide-panel-heading button, .ide-zen-exit) {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.ide-dock-tabs [aria-selected="true"] { background: var(--bg-surface-muted); color: var(--text-primary); }
+.ide-guide, .ide-guide-heading, .ide-guide-toggle, .ide-guide-item {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.ide-guide-group { border-color: var(--border-color); }
+.ide-guide-later, .ide-lint { color: var(--text-secondary); border-color: var(--border-color); }
+.ide-guide :is(button:hover, button:focus-visible) { background: var(--bg-surface-muted); color: var(--text-primary); }
+.ide-lint-error { background: var(--error-surface); color: var(--error-ink); }
+.ide-change-summary { background: var(--success-surface); color: var(--success-ink); border-color: var(--border-color); }
+.settings-modal :is(.settings-tabs [aria-selected="true"], .settings-footer > button:last-child),
+.auth-card :is(.auth-tabs [aria-pressed="true"], .auth-submit) {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.settings-preview { color-scheme: inherit; }
+.settings-modal { margin: auto; }
+/* Explanations inside overlays must share their surface's palette. */
+.theme-overlay :is(p, small, label) { color: var(--text-secondary); }
+.theme-overlay :is(h1, h2, h3, h4, strong) { color: var(--text-primary); }
+.theme-overlay :is(input, textarea, select) {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.theme-overlay :is(input, textarea)::placeholder { color: var(--text-secondary); opacity: 1; }
+/* Semantic tokens also cover CSS-based overlays outside the main React shell. */
+:root.dark :is(dialog, [role="dialog"], [role="tooltip"]) {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}

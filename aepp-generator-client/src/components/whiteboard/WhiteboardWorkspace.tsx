@@ -1,5 +1,10 @@
+import { useSyncExternalStore } from 'react'
+import { liveExecution } from '../../interpreter/liveExecution'
+import { matchesExecution, useFollowNode } from './liveHighlight'
+import DynamicTraceTable from './DynamicTraceTable'
+import './live-execution.css'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { ArrowRight, Circle, Diamond, Download, Eraser, FileCode2, Hand, Highlighter, ImagePlus, Minus, MousePointer2, Pencil, Redo2, Save, Square, Table2, Trash2, Type, Undo2, WandSparkles, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowRight, Circle, Diamond, Download, Eraser, FileCode2, Hand, Highlighter, ImagePlus, PanelRightOpen, PanelRightClose, X, Minus, MousePointer2, Pencil, Redo2, Save, Square, Table2, Trash2, Type, Undo2, WandSparkles, ZoomIn, ZoomOut } from 'lucide-react'
 import { toDiagnostic, formatDiagnostic } from '../../interpreter/diagnostics'
 import { flowchartFromCode } from '../../whiteboard/flowchart'
 import { boardBounds, emptyBoard, ensureOutputColumn, isConnectable, itemBounds, loadBoard, moveItem, newId, tableCellHeight, tableCellWidth, tableDimensions, type BoardDocument, type BoardItem, type DrawTool, type ImageItem, type Point, type ShapeItem, type ShapeKind, type TableItem, type Tool } from '../../whiteboard/model'
@@ -7,11 +12,11 @@ import { FlowConnection, FlowShape } from './FlowShape'
 import TraceTable from './TraceTable'
 import './whiteboard.css'
 
-const shapeLabels: Record<ShapeKind, string> = { start: 'Αρχή / Τέλος', io: 'Πλάγιο Παραλληλόγραμμο (ΔΙΑΒΑΣΕ / ΓΡΑΨΕ)', process: 'Επεξεργασία', decision: 'Συνθήκη', connector: 'Σύνδεσμος', note: 'Κείμενο' }
+const shapeLabels: Record<ShapeKind, string> = { start: 'Αρχή / Τέλος', io: 'Πλάγιο Παραλληλόγραμμο (ΔΙΑΒΑΣΕ / ΓΡΑΨΕ)', process: 'Επεξεργασία', subprogram: 'Υποπρόγραμμα', decision: 'Συνθήκη', connector: 'Σύνδεσμος', note: 'Κείμενο' }
 const tools = [
   { id: 'select', label: 'Επιλογή', icon: MousePointer2 }, { id: 'hand', label: 'Μετακίνηση καμβά', icon: Hand },
   { id: 'start', label: 'Αρχή / Τέλος', icon: Circle }, { id: 'io', label: 'Πλάγιο Παραλληλόγραμμο (ΔΙΑΒΑΣΕ / ΓΡΑΨΕ)', icon: Square },
-  { id: 'process', label: 'Επεξεργασία', icon: Square }, { id: 'decision', label: 'Συνθήκη', icon: Diamond },
+  { id: 'process', label: 'Επεξεργασία', icon: Square }, { id: 'subprogram', label: 'Υποπρόγραμμα', icon: FileCode2 }, { id: 'decision', label: 'Συνθήκη', icon: Diamond },
   { id: 'connector', label: 'Σύνδεσμος', icon: Circle }, { id: 'arrow', label: 'Βέλος σύνδεσης', icon: ArrowRight },
   { id: 'line', label: 'Γραμμή', icon: Minus }, { id: 'pencil', label: 'Μολύβι', icon: Pencil },
   { id: 'highlighter', label: 'Μαρκαδόρος', icon: Highlighter }, { id: 'note', label: 'Κείμενο', icon: Type },
@@ -47,7 +52,11 @@ function download(content: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
-export default function WhiteboardWorkspace({ getSource }: { getSource: () => string }) {
+export default function WhiteboardWorkspace({ getSource, active = true, diagramRequest = 0 }: { getSource: () => string; active?: boolean; diagramRequest?: number }) {
+  const live = useSyncExternalStore(liveExecution.subscribe, liveExecution.getSnapshot, liveExecution.getSnapshot)
+  const [showTrace,setShowTrace] = useState(false)
+  const [followExecution,setFollowExecution] = useState(true)
+  const handledDiagramRequest = useRef(0)
   const [history, setHistory] = useState<History>(() => ({ past: [], present: loadBoard(), future: [] }))
   const [preview, setPreview] = useState<BoardDocument | null>(null)
   const [tool, setTool] = useState<Tool>('select')
@@ -58,6 +67,13 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
   const [tableDialog, setTableDialog] = useState(false)
   const [columnsInput, setColumnsInput] = useState('i, Χ, άθροισμα, Συνθήκη (Χ > 0)')
   const [saveOpen, setSaveOpen] = useState(false)
+  const [inspectorOpen, setInspectorOpen] = useState(() => {
+    try { return localStorage.getItem('aepp.whiteboard.inspector') !== 'closed' } catch { return true }
+  })
+  const inspectorToggleRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    try { localStorage.setItem('aepp.whiteboard.inspector', inspectorOpen ? 'open' : 'closed') } catch { /* Ο πίνακας λειτουργεί και χωρίς αποθήκευση ρυθμίσεων. */ }
+  }, [inspectorOpen])
   const [notice, setNotice] = useState('')
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 })
@@ -69,6 +85,9 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
   const lastShapeTap = useRef<{ id: string; at: number } | null>(null)
   const previewRef = useRef<BoardDocument | null>(null)
   const board = preview ?? history.present
+  const execution = board.executionSource === live.source ? live.event?.nodeExecution : undefined
+  const activeShape = [...board.items].reverse().find(item => item.type === 'shape' && matchesExecution(item, execution))
+  useFollowNode(activeShape?.type === 'shape' ? activeShape : undefined, viewport.width / zoom, viewport.height / zoom, pan, setPan, active && followExecution)
   const selected = board.items.find(item => item.id === selectedId) ?? null
   const selectedConnection = board.links.find(link => link.id === selectedLink) ?? null
 
@@ -95,11 +114,12 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
   useEffect(() => {
     const element = stageRef.current
     if (!element) return
-    const observer = new ResizeObserver(() => setViewport({ width: element.clientWidth, height: element.clientHeight }))
+    const observer = new ResizeObserver(() => { if (element.clientWidth && element.clientHeight) setViewport({ width: element.clientWidth, height: element.clientHeight }) })
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
   useEffect(() => {
+    if (!active) return
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement
       if (target.closest('input, textarea, [contenteditable="true"]')) return
@@ -110,7 +130,7 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo, redo, removeSelected, selectedId, selectedLink])
+  }, [active, undo, redo, removeSelected, selectedId, selectedLink])
 
   function worldPoint(event: ReactPointerEvent<SVGElement>): Point {
     const svg = svgRef.current!
@@ -261,6 +281,13 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
     }
     reader.readAsDataURL(file)
   }
+  useEffect(() => {
+    if (!active || !diagramRequest || handledDiagramRequest.current === diagramRequest) return
+    handledDiagramRequest.current = diagramRequest
+    // Επαναχρησιμοποίηση του υπάρχοντος διαγράμματος για τον ίδιο κώδικα.
+    if (history.present.executionSource !== getSource() || !history.present.items.some(item => item.type === 'shape' && item.nodeId)) generateDiagram()
+  }, [active, diagramRequest])
+
   function generateDiagram() {
     try {
       const generated = flowchartFromCode(getSource())
@@ -268,7 +295,7 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
       const shift = history.present.items.length ? currentBounds.x + currentBounds.width + 140 : 0
       const items = generated.items.map(item => moveItem(item, shift, 0))
       const links = generated.links.map(link => link.route?.via ? { ...link, route: { ...link.route, via: link.route.via.map(point => ({ x: point.x + shift, y: point.y })) } } : link)
-      commit({ ...history.present, items: [...history.present.items, ...items], links: [...history.present.links, ...links] })
+      commit({ ...history.present, items: [...history.present.items, ...items], links: [...history.present.links, ...links], executionSource: getSource() })
       const bounds = boardBounds({ ...generated, items, links })
       const fit = clamp((viewport.width / bounds.width) * .88, .65, 1.1)
       setZoom(fit); setPan({ x: bounds.x - 20, y: bounds.y - 20 }); setTool('select')
@@ -312,7 +339,7 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
   const selectedShape = selected?.type === 'shape' ? selected : null
   const viewWidth = viewport.width / zoom, viewHeight = viewport.height / zoom
   const draw = board.items.map(item => {
-    if (item.type === 'shape') return <FlowShape key={item.id} item={item} selected={selectedId === item.id || pendingFrom === item.id} onPointerDown={event => startOnItem(event, item)} onDoubleClick={() => beginEdit(item)} />
+    if (item.type === 'shape') return <FlowShape key={item.id} item={item} selected={selectedId === item.id || pendingFrom === item.id} active={activeShape?.id === item.id} onPointerDown={event => startOnItem(event, item)} onDoubleClick={() => beginEdit(item)} />
     if (item.type === 'table') return <TraceTable key={item.id} item={item} selected={selectedId === item.id} onPointerDown={event => startOnItem(event, item)} onCellDoubleClick={(row, column) => { setSelectedId(item.id); setEditing({ id: item.id, row, column, value: item.rows[row][column] }) }} />
     if (item.type === 'image') return <g key={item.id} className="wb-object" data-item-id={item.id} transform={`rotate(${item.rotation} ${item.x + item.width / 2} ${item.y + item.height / 2})`} onPointerDown={event => startOnItem(event, item)}><image href={item.src} x={item.x} y={item.y} width={item.width} height={item.height} preserveAspectRatio="xMidYMid meet" /><rect x={item.x} y={item.y} width={item.width} height={item.height} fill="transparent" stroke={selectedId === item.id ? '#60a5fa' : 'transparent'} strokeWidth="2" /></g>
     if (item.type === 'stroke') return <polyline key={item.id} className="wb-object" data-item-id={item.id} points={item.points.map(point => `${point.x},${point.y}`).join(' ')} fill="none" stroke={item.highlight ? '#facc15' : '#b9d6ff'} strokeWidth={item.highlight ? 14 : 3} opacity={item.highlight ? .45 : 1} strokeLinecap="round" strokeLinejoin="round" onPointerDown={event => startOnItem(event as ReactPointerEvent<SVGGElement>, item)} />
@@ -320,8 +347,8 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
   })
 
   return <section className="wb-workspace" aria-labelledby="whiteboard-title">
-    <header className="wb-header"><div className="wb-header-start"><div className="wb-save-wrap"><button type="button" onClick={() => setSaveOpen(open => !open)} className="wb-secondary" aria-expanded={saveOpen}><Save size={17} />Αποθήκευση</button>{saveOpen && <div className="wb-save-menu">{(['png', 'svg', 'json'] as const).map(format => <button key={format} type="button" onClick={() => void exportBoard(format)}><Download size={15} />Εξαγωγή {format.toUpperCase()}</button>)}</div>}</div><div><p className="wb-eyebrow">ΕΡΓΑΣΤΗΡΙΟ ΑΛΓΟΡΙΘΜΩΝ</p><h1 id="whiteboard-title">Πίνακας & Διαγράμματα</h1><p>Σχεδίασε ροές, συμπλήρωσε Πίνακες Τιμών και εξήγησε κάθε βήμα.</p></div></div><div className="wb-header-actions"><button type="button" onClick={generateDiagram} className="wb-primary"><WandSparkles size={17} />Διάγραμμα από κώδικα</button></div></header>
-    <div className="wb-shell">
+    <header className="wb-header"><div className="wb-header-start"><div className="wb-save-wrap"><button type="button" onClick={() => setSaveOpen(open => !open)} className="wb-secondary" aria-expanded={saveOpen}><Save size={17} />Αποθήκευση</button>{saveOpen && <div className="wb-save-menu">{(['png', 'svg', 'json'] as const).map(format => <button key={format} type="button" onClick={() => void exportBoard(format)}><Download size={15} />Εξαγωγή {format.toUpperCase()}</button>)}</div>}</div><div><p className="wb-eyebrow">ΕΡΓΑΣΤΗΡΙΟ ΑΛΓΟΡΙΘΜΩΝ</p><h1 id="whiteboard-title">Πίνακας & Διαγράμματα</h1><p>Σχεδίασε ροές, συμπλήρωσε Πίνακες Τιμών και εξήγησε κάθε βήμα.</p></div></div><div className="wb-header-actions"><button type="button" aria-pressed={showTrace} onClick={()=>setShowTrace(value=>!value)}>Αυτόματος πίνακας τιμών</button><button type="button" aria-pressed={followExecution} onClick={()=>setFollowExecution(value=>!value)}>Ακολούθηση εκτέλεσης</button><button ref={inspectorToggleRef} type="button" className="wb-secondary wb-inspector-toggle" aria-expanded={inspectorOpen} aria-controls="wb-properties" title={inspectorOpen ? "Απόκρυψη ιδιοτήτων για μεγαλύτερο καμβά" : "Εμφάνιση ιδιοτήτων"} onClick={() => setInspectorOpen(open => !open)}>{inspectorOpen ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}{inspectorOpen ? "Απόκρυψη ιδιοτήτων" : "Ιδιότητες"}</button><button type="button" onClick={generateDiagram} className="wb-primary"><WandSparkles size={17} />Διάγραμμα από κώδικα</button></div></header>
+    <div className={"wb-shell" + (inspectorOpen ? "" : " wb-shell-expanded")}>
       <div className="wb-board-column">
         <div className="wb-toolbar" role="toolbar" aria-label="Εργαλεία Ψηφιακού Πίνακα">
           {tools.map(({ id, label, icon: Icon }, index) => <button key={id} type="button" title={label} aria-label={label} aria-pressed={tool === id} className={`wb-tool wb-tool-${id}${tool === id ? ' is-active' : ''}${[2, 7, 9, 11, 14].includes(index) ? ' wb-tool-divider' : ''}`} onClick={() => { if (id === 'image') uploadRef.current?.click(); else if (id === 'table') setTableDialog(true); else { setTool(id as Tool); setPendingFrom(null) } }}><Icon size={18} /></button>)}
@@ -341,7 +368,7 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
           <div className="wb-stage-hint">{pendingFrom ? 'Επίλεξε το δεύτερο σχήμα για να συνδεθεί.' : tool === 'arrow' ? 'Πάτησε δύο σχήματα για έξυπνο βέλος ή σύρε για απλό βέλος.' : tool === 'select' ? 'Σύρε αντικείμενα · διπλό κλικ για κείμενο' : 'Πάτησε και σύρε στον καμβά'}</div>
         </div>
       </div>
-      <aside className="wb-inspector"><div className="wb-inspector-top"><span>ΙΔΙΟΤΗΤΕΣ</span><button type="button" title="Καθαρισμός πίνακα" aria-label="Καθαρισμός πίνακα" onClick={() => { commit(emptyBoard()); setSelectedId(null); setSelectedLink(null); setNotice('Ο πίνακας καθαρίστηκε. Μπορείς να κάνεις αναίρεση.') }}><Trash2 size={16} /></button></div>
+      <aside id="wb-properties" className="wb-inspector" hidden={!inspectorOpen} aria-label="Ιδιότητες πίνακα"><div className="wb-inspector-top"><span>ΙΔΙΟΤΗΤΕΣ</span><button type="button" title="Απόκρυψη ιδιοτήτων" aria-label="Απόκρυψη ιδιοτήτων" onClick={() => { setInspectorOpen(false); inspectorToggleRef.current?.focus() }}><X size={16} /></button><button type="button" title="Καθαρισμός πίνακα" aria-label="Καθαρισμός πίνακα" onClick={() => { commit(emptyBoard()); setSelectedId(null); setSelectedLink(null); setNotice('Ο πίνακας καθαρίστηκε. Μπορείς να κάνεις αναίρεση.') }}><Trash2 size={16} /></button></div>
         {selected ? <div className="wb-inspector-body"><p className="wb-inspector-kicker">ΕΠΙΛΕΓΜΕΝΟ ΣΤΟΙΧΕΙΟ</p><h2>{selected.type === 'shape' ? shapeLabels[selected.kind] : selected.type === 'table' ? 'Πίνακας Τιμών' : selected.type === 'image' ? 'Εικόνα' : selected.type === 'line' ? 'Γραμμή / Βέλος' : 'Ελεύθερη σχεδίαση'}</h2><p className="wb-muted">Σύρε το στοιχείο για μετακίνηση.{(selected.type === 'shape' || selected.type === 'image') && ' Σύρε μία από τις τέσσερις γωνιακές λαβές για αλλαγή μεγέθους ή την επάνω λαβή για περιστροφή.'}{selected.type === 'line' && ' Η γωνιακή λαβή αλλάζει το μήκος και την κατεύθυνση.'}</p>
           {selectedShape && <label className="wb-field">Κείμενο<textarea key={`${selectedShape.id}-${selectedShape.text}`} defaultValue={selectedShape.text} onBlur={event => { if (event.target.value !== selectedShape.text) updateItem(selectedShape.id, item => item.type === 'shape' ? { ...item, text: event.target.value } : item) }} rows={3} /></label>}
           {selected.type === 'table' && <div className="wb-table-editor"><p className="wb-muted">Κάθε σειρά είναι ένα βήμα ιχνηλάτησης. Συμπλήρωσε τις τιμές μετά την εκτέλεση της αντίστοιχης εντολής.</p><div className="wb-table-scroll"><table><thead><tr><th>Βήμα</th>{selected.columns.map(column => <th key={column}>{column}</th>)}</tr></thead><tbody>{selected.rows.map((row, rowIndex) => <tr key={rowIndex}><th>{rowIndex + 1}</th>{row.map((cell, columnIndex) => <td key={columnIndex}><input aria-label={`${selected.columns[columnIndex]}, βήμα ${rowIndex + 1}`} defaultValue={cell} key={`${selected.id}-${rowIndex}-${columnIndex}-${cell}`} onBlur={event => { if (event.target.value !== cell) updateItem(selected.id, item => item.type === 'table' ? { ...item, rows: item.rows.map((cells, index) => index === rowIndex ? cells.map((value, col) => col === columnIndex ? event.target.value : value) : cells) } : item) }} /></td>)}</tr>)}</tbody></table></div><button type="button" className="wb-secondary wb-full" onClick={() => addTableRow(selected)}>+ Προσθήκη βήματος</button></div>}
@@ -350,6 +377,7 @@ export default function WhiteboardWorkspace({ getSource }: { getSource: () => st
             : <div className="wb-inspector-body"><p className="wb-inspector-kicker">ΟΔΗΓΟΣ</p><h2>Ο δικός σου χώρος σκέψης</h2><p className="wb-muted">Επίλεξε εργαλείο επάνω, σχεδίασε στον καμβά και κάνε διπλό κλικ για να αλλάξεις κείμενο. Για σύνδεση σχημάτων, επίλεξε το βέλος και πάτησε διαδοχικά τα δύο σχήματα.</p><div className="wb-tip"><FileCode2 size={18} /><span>Το «Διάγραμμα από κώδικα» διαβάζει το πρόγραμμα που έγραψες στην καρτέλα του Διερμηνευτή.</span></div><div className="wb-tip"><Table2 size={18} /><span>Ο Πίνακας Τιμών οργανώνει τις μεταβλητές ανά βήμα εκτέλεσης.</span></div></div>}
       </aside>
     </div>
+    {showTrace && <DynamicTraceTable state={live}/>}
     <p role="status" className="wb-notice">{notice}</p>
     {tableDialog && <div className="wb-dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setTableDialog(false) }}><form className="wb-dialog" role="dialog" aria-modal="true" aria-labelledby="wb-table-title" onSubmit={event => { event.preventDefault(); createTable() }}><p className="wb-eyebrow">ΙΧΝΗΛΑΤΗΣΗ ΑΛΓΟΡΙΘΜΟΥ</p><h2 id="wb-table-title">Νέος Πίνακας Τιμών</h2><p>Γράψε τις μεταβλητές και τις συνθήκες που θέλεις να παρακολουθείς, χωρισμένες με κόμμα. Η τελευταία στήλη «ΕΞΟΔΟΣ» προστίθεται αυτόματα.</p><label className="wb-field">Στήλες / μεταβλητές<input autoFocus value={columnsInput} onChange={event => setColumnsInput(event.target.value)} placeholder="i, Χ, άθροισμα, Συνθήκη (Χ > 0)" /></label><div className="wb-dialog-actions"><button type="button" className="wb-secondary" onClick={() => setTableDialog(false)}>Άκυρο</button><button type="submit" className="wb-primary"><Table2 size={16} />Δημιουργία πίνακα</button></div></form></div>}
   </section>

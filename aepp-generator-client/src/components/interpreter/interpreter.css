@@ -27,3 +27,12 @@
 .ide-guide-item:hover,.ide-guide-item:focus-visible{border-color:#38bdf8;background:#1e3a5f;outline:none}
 .ide-guide-later{border:1px solid #475569;border-radius:999px;padding:.1rem .3rem;color:#94a3b8;font-family:ui-sans-serif,system-ui,sans-serif;font-size:.55rem;white-space:nowrap}
 @media(max-width:1023px){.ide-grid{grid-template-columns:minmax(0,1fr)}.ide-editor-shell{height:460px}}
+
+.ide-updated-line{background:#d1fae5;box-shadow:inset 3px 0 #10b981}
+.ide-change-summary{flex-shrink:0;border-top:1px solid #a7f3d0;background:#ecfdf5;color:#065f46;font:12px/1.5 ui-monospace,Consolas,monospace;padding:7px 12px;max-height:72px;overflow:auto;overflow-wrap:anywhere}
+
+.runtime-follow-control{display:flex;align-items:center;gap:7px;flex-shrink:0;padding:5px 10px;font-size:11px;color:#475569;background:#f8fafc}
+.runtime-follow-control input{accent-color:#10b981}
+.runtime-latest-output{border-left:2px solid #34d399;padding-left:8px;animation:runtime-output-flash .8s ease-out}
+@keyframes runtime-output-flash{from{background:#065f46;color:#fff}to{background:transparent}}
+@media(prefers-reduced-motion:reduce){.runtime-latest-output{animation:none}}

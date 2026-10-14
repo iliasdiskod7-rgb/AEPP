@@ -4,3 +4,16 @@ GET {{AeppGenerator.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Αξιολόγηση κώδικα (απαιτεί έγκυρο cookie σύνδεσης)
+POST {{AeppGenerator.Api_HostAddress}}/api/code-review
+Content-Type: application/json
+
+{
+  "studentCode": "ΠΡΟΓΡΑΜΜΑ Μεγιστο\nΜΕΤΑΒΛΗΤΕΣ\n  ΑΚΕΡΑΙΕΣ: MAX, X\nΑΡΧΗ\n  MAX <- 0\n  ΔΙΑΒΑΣΕ X\n  ΑΝ X > MAX ΤΟΤΕ\n    MAX <- X\n  ΤΕΛΟΣ_ΑΝ\n  ΓΡΑΨΕ MAX\nΤΕΛΟΣ_ΠΡΟΓΡΑΜΜΑΤΟΣ",
+  "metrics": {
+    "comparisonsCount": 1,
+    "assignmentsCount": 2,
+    "loopIterations": 0
+  }
+}

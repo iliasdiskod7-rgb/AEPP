@@ -1,8 +1,11 @@
+import { GeneratedExamSchema } from './examSchemas'
+import { parseBoundary } from './schemas'
 import type { ExamJsonResponseDto } from '../types/exam'
 import type { AssessmentExam, AssessmentQuestion } from './model'
 
-/** Το σημερινό συμβόλαιο Gemini δεν περιέχει δομημένο κλειδί ή δοκιμές. Αυτές οι απαντήσεις απαιτούν έλεγχο. */
-export function generatedToAssessment(source: ExamJsonResponseDto): AssessmentExam {
+/** Οι δοκιμές προτύπων διατηρούνται, αλλά η συνολική βαθμολόγηση απαιτεί έλεγχο καθηγητή. */
+export function generatedToAssessment(input: ExamJsonResponseDto): AssessmentExam {
+  const source = parseBoundary(GeneratedExamSchema,input)
   const content = JSON.stringify(source.sections)
   let signature = 2166136261
   for (let index = 0; index < content.length; index++) signature = Math.imul(signature ^ content.charCodeAt(index), 16777619)
@@ -22,7 +25,7 @@ export function generatedToAssessment(source: ExamJsonResponseDto): AssessmentEx
         }
         if (section.theme === 'Θέμα Γ' || section.theme === 'Θέμα Δ') {
           const referenceCode = /```(?:glossa|ΓΛΩΣΣΑ)\s*\n([\s\S]*?)```/iu.exec(question.solutionText)?.[1]?.trim() ?? ''
-          return { ...base, kind: 'program', gradingMode: 'review', referenceCode, testCases: [], rubric: [] }
+          return { ...base, kind: 'program', gradingMode: 'review', referenceCode, testCases: question.testCases ?? [], rubric: [] }
         }
         return { ...base, kind: 'open' }
       }),

@@ -1,0 +1,13 @@
+/* Keep translucent lesson surfaces readable alongside the global theme. */
+@media screen {
+  html[data-theme=dark] .courses-workspace :is([class~="bg-slate-50/60"],[class~="bg-slate-50/50"]) { background:#101b2b; color:var(--ink); }
+  html[data-theme=dark] .courses-workspace :is([class~="bg-emerald-50"],[class~="bg-emerald-50/60"]) { background:#12352d; border-color:#2d6b57; color:#a7f3d0; }
+  html[data-theme=dark] .courses-workspace :is([class~="text-emerald-900"],[class~="text-emerald-900/75"]) { color:#a7f3d0; }
+  html[data-theme=dark] .courses-workspace :is([class~="bg-red-50"],[class~="bg-red-50/60"],[class~="bg-red-100"]) { background:#3b202a; border-color:#864453; color:#fecdd3; }
+  html[data-theme=dark] .courses-workspace :is([class~="text-red-900"],[class~="text-red-700"]) { color:#fecdd3; }
+  html[data-theme=dark] .courses-workspace :is([class~="bg-amber-50/60"],[class~="bg-amber-100"]) { background:#332a1a; border-color:#785727; color:#fde68a; }
+  html[data-theme=dark] .courses-workspace :is([class~="text-amber-800"],[class~="text-amber-900/75"]) { color:#fde68a; }
+  html[data-theme=dark] .courses-workspace :is([class~="bg-blue-50/60"],[class~="bg-blue-100"]) { background:#172c49; border-color:#345785; }
+  html[data-theme=dark] .courses-workspace .text-blue-600 { color:#93c5fd; }
+  html[data-theme=dark] .courses-workspace button:not(:disabled):hover[class~="hover:bg-blue-50"] { background:#203b5f; }
+}

@@ -1,0 +1,13 @@
+import { z } from 'zod'
+import { ProgramTestCaseSchema, ThemeSchema } from './schemas'
+import type { Exam, ExamJsonResponseDto, ExecutionTrace } from '../types/exam'
+const text = z.string().max(100000)
+const metadata = { generationSource: z.enum(['ai','examBank']).optional(), fallbackMessage: text.nullable().optional(), fallbackDetails: text.nullable().optional(), bankExamId: text.nullable().optional() }
+const question = z.object({ code: z.string().min(1).max(200), questionText: text, glowCodeSnippet: text.nullable(), solutionText: text, marks: z.number().finite().positive().max(100), testCases: z.array(ProgramTestCaseSchema).max(50).optional() })
+export const GeneratedExamSchema: z.ZodType<ExamJsonResponseDto> = z.object({ ...metadata, title: z.string().min(1).max(200), durationMinutes: z.number().int().min(1).max(480), sections: z.array(z.object({ theme: ThemeSchema, totalMarks: z.number().finite().positive().max(100), questions: z.array(question).min(1).max(50) })).min(1).max(4) }).superRefine((exam,ctx) => {
+ if(new Set(exam.sections.map(s=>s.theme)).size!==exam.sections.length || exam.sections.some(s=>Math.abs(s.questions.reduce((sum,q)=>sum+q.marks,0)-s.totalMarks)>0.000001))ctx.addIssue({code:'custom',message:'Μη έγκυρη κατανομή θεμάτων και μονάδων.'})
+})
+export const ExamResponseSchema: z.ZodType<Exam> = z.object({ ...metadata, id: z.string().min(1), title: text, academicYear: text, targetTopic: text, difficulty: z.enum(['Easy','Medium','Hard']), createdAt: z.string().min(1), durationMinutes: z.number().int().positive().max(480), sections: z.array(z.object({ id: z.string(), examId: z.string(), sectionType: z.enum(['ThemeA','ThemeB','ThemeC','ThemeD']), title: ThemeSchema, totalMarks: z.number().positive().max(100), questions: z.array(z.object({ id: z.string(), sectionId: z.string(), orderIndex: z.number().int().nonnegative(), subTitle: text, contentMarkdown: text, solutionMarkdown: text, marks: z.number().positive().max(100), executionTraceJson: text.nullable(), testCases: z.array(ProgramTestCaseSchema).nullable().optional() })).min(1).max(50) })).min(1).max(4) })
+export const ExecutionTraceSchema: z.ZodType<ExecutionTrace> = z.object({ columns: z.array(z.string()).min(1).max(100), rows: z.array(z.array(z.union([z.string(),z.number().finite(),z.boolean(),z.null()])).max(100)).max(1000) }).refine(trace=>trace.rows.every(row=>row.length===trace.columns.length))
+
+export const SavedExamEntriesSchema = z.array(z.object({ id: z.string().min(1).max(200), title: text, format: z.enum(['examDto','examJson']), createdAt: z.iso.datetime({offset:true}) })).max(1000)

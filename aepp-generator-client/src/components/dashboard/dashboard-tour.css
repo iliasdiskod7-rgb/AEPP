@@ -1,0 +1,49 @@
+.dashboard-tour-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+.dashboard-tour-shade__pane {
+  position: fixed;
+  background: rgb(15 23 42 / 72%);
+}
+
+.dashboard-tour-shade__pane--all {
+  inset: 0;
+}
+
+.dashboard-tour-shade__target {
+  position: fixed;
+  background: transparent;
+}
+
+[data-dashboard-feature][data-tour-active="true"] {
+  position: relative;
+  outline: 3px solid white;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 7px rgb(37 99 235 / 80%), 0 16px 40px rgb(15 23 42 / 30%);
+}
+
+.dashboard-tour-popover {
+  position: fixed;
+  z-index: 72;
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(80vh, 440px);
+  overflow-y: auto;
+  transform: translateX(-50%);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  padding: 20px;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 32%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-tour-popover,
+  [data-dashboard-feature] {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

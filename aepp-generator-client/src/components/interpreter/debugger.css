@@ -1,0 +1,22 @@
+.debugger-panel{padding:10px;color:var(--ink,#1e293b);font-size:13px;min-width:0}
+.debugger-panel h3,.debugger-panel h4{font-weight:700;margin:10px 0 6px}
+.debugger-panel p{font-size:12px;margin:8px 0;color:var(--muted,#64748b)}
+.debugger-panel button{border:1px solid var(--edge,#cbd5e1);border-radius:6px;background:transparent;color:inherit;padding:5px 8px}
+.debugger-panel button[aria-pressed=true]{background:#1e40af;color:white}
+.debugger-stack{list-style:none;padding:0;display:grid;gap:6px}
+.debugger-stack button{width:100%;text-align:left;overflow-wrap:anywhere}
+.debugger-breakpoints{display:flex;flex-wrap:wrap;gap:5px}
+.debugger-breakpoints button{color:#ef4444}
+.debugger-panel form{display:flex;gap:5px;flex-wrap:wrap}
+.debugger-panel input{width:100%;min-width:0;border:1px solid var(--edge,#cbd5e1);border-radius:6px;padding:6px;background:var(--surface,#fff);color:inherit}
+.debugger-panel dl>div{border-bottom:1px solid var(--edge,#cbd5e1);padding:7px 0}
+.debugger-panel dt{display:flex;align-items:center;justify-content:space-between;font-family:monospace}
+.debugger-panel dd{margin:5px 0;overflow-wrap:anywhere}
+.ide-gutter .ide-breakpoint-toggle{height:100%;width:100%;display:flex;align-items:flex-start;justify-content:flex-end;gap:4px;padding:0 6px;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;position:relative}
+.ide-breakpoint-dot{flex:0 0 8px;width:8px;height:8px;margin-top:8px;border-radius:50%;background:transparent}
+.ide-has-breakpoint .ide-breakpoint-dot{background:#ef4444;box-shadow:0 0 0 1px #b91c1c}
+.ide-breakpoint-toggle:hover .ide-breakpoint-dot{box-shadow:0 0 0 1px #ef4444}
+.ide-breakpoint-toggle:focus-visible{outline:2px solid #60a5fa;outline-offset:-2px}
+
+.ide-debug-gutter{width:4.5rem;padding-right:0}
+.ide-breakpoint-dot{margin-top:calc((var(--editor-line-height,24px) - 8px)/2)}

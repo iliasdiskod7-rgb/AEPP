@@ -2,14 +2,20 @@ using System.Net;
 using AeppGenerator.Application.Abstractions;
 using AeppGenerator.Application.Exams;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AeppGenerator.Api.Controllers;
 
 [ApiController]
+[Authorize]
+[EnableRateLimiting("AiInsightsPolicy")]
 [Route("api/exams/assessment-insight")]
 public sealed class AssessmentInsightsController(IAssessmentInsightService insights) : ControllerBase
 {
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(typeof(AssessmentInsightResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<AssessmentInsightResponse>> Generate(
         [FromBody] AssessmentInsightRequest request, CancellationToken ct)

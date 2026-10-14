@@ -1,3 +1,4 @@
+import { AssessmentInsightSchema, parseBoundary } from '../assessment/schemas'
 import { apiClient } from './client'
 import type { AssessmentInsight, AssessmentReport } from '../assessment/model'
 
@@ -9,6 +10,6 @@ export async function generateAssessmentInsight(report: AssessmentReport): Promi
       referenceCode: result.referenceCode || null, astSummary: result.astSummary || null,
     }
   }))
-  const { data } = await apiClient.post<AssessmentInsight>('/exams/assessment-insight', { items }, { timeout: 90_000 })
-  return data
+  const { data } = await apiClient.post<unknown>('/exams/assessment-insight', { items }, { timeout: 90_000 })
+  return parseBoundary(AssessmentInsightSchema,data)
 }

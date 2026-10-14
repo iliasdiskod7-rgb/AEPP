@@ -24,8 +24,12 @@ public static class DependencyInjection
             client.Timeout = Timeout.InfiniteTimeSpan;
         }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
           .RedactLoggedHeaders(["x-goog-api-key"]);
-        services.AddScoped<ILlmExamGeneratorService, LlmExamGeneratorService>();
+        services.AddSingleton<LlmRetryHandler>();
+        services.AddSingleton<LocalExamBank>();
+        services.AddScoped<LlmExamGeneratorService>();
+        services.AddScoped<ILlmExamGeneratorService, FallbackExamGeneratorService>();
         services.AddScoped<IAssessmentInsightService, AssessmentInsightService>();
+        services.AddScoped<ICodeReviewService, CodeReviewService>();
 
         return services;
     }

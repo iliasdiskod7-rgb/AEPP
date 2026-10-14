@@ -1,11 +1,14 @@
+import './courses.css'
 import { Suspense, useRef, useState } from 'react'
 import { BookOpen, ChevronDown, ChevronRight, LibraryBig, List, Search, X } from 'lucide-react'
 import { courseCatalog, type CatalogChapter, type CatalogLesson } from '../../data/courses/catalog'
 import { cn } from '../../lib/utils'
+import RelatedMethodologies from './RelatedMethodologies'
 
 interface CoursesWorkspaceProps {
   selectedLessonId: string
   onSelectLesson: (id: string) => void
+  onOpenMethodology: (id: string) => void
 }
 
 const totalLessons = courseCatalog.reduce((count, chapter) => count + chapter.lessons.length, 0)
@@ -14,7 +17,7 @@ function normalizeSearch(value: string) {
   return value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('el-GR').trim()
 }
 
-export default function CoursesWorkspace({ selectedLessonId, onSelectLesson }: CoursesWorkspaceProps) {
+export default function CoursesWorkspace({ selectedLessonId, onSelectLesson, onOpenMethodology }: CoursesWorkspaceProps) {
   const [search, setSearch] = useState('')
   const [openChapters, setOpenChapters] = useState<Set<string>>(() => new Set(courseCatalog.map(chapter => chapter.id)))
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false)
@@ -47,8 +50,8 @@ export default function CoursesWorkspace({ selectedLessonId, onSelectLesson }: C
     })
   }
 
-  return <section aria-label="Βιβλιοθήκη μαθημάτων" className="mx-auto max-w-7xl">
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3"><div><p className="mb-2 text-xs font-semibold tracking-wide text-blue-700">ΕΚΠΑΙΔΕΥΤΙΚΟ ΥΛΙΚΟ</p><h1 className="text-2xl font-bold tracking-tight text-slate-900">Μαθήματα & Τεστ</h1><p className="mt-2 text-sm text-slate-500">Βρες το μάθημα που χρειάζεσαι, οργανωμένο ανά κεφάλαιο.</p></div><span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600"><LibraryBig size={15} aria-hidden="true" />{totalLessons} διαθέσιμα μαθήματα</span></div>
+  return <section aria-label="Βιβλιοθήκη μαθημάτων" className="courses-workspace mx-auto max-w-7xl">
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Μαθήματα</h2><p className="mt-2 text-sm text-slate-500">Βρες το μάθημα που χρειάζεσαι, οργανωμένο ανά κεφάλαιο.</p></div><span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600"><LibraryBig size={15} aria-hidden="true" />{totalLessons} διαθέσιμα μαθήματα</span></div>
 
     <button type="button" aria-expanded={mobileCatalogOpen} aria-controls="courses-catalog" onClick={() => setMobileCatalogOpen(open => !open)} className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-700 shadow-sm xl:hidden"><span className="flex min-w-0 items-center gap-2"><List size={18} className="shrink-0 text-blue-700" aria-hidden="true" /><span className="truncate">Μάθημα {selected.number}: {selected.title}</span></span>{mobileCatalogOpen ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}</button>
 
@@ -62,6 +65,7 @@ export default function CoursesWorkspace({ selectedLessonId, onSelectLesson }: C
       </aside>
 
       <div ref={reader} className="min-w-0 scroll-mt-4">
+        <RelatedMethodologies lessonId={selected.id} onOpen={onOpenMethodology} />
         <Suspense fallback={<div role="status" className="flex min-h-48 items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">Φόρτωση μαθήματος…</div>}>
           <LessonComponent key={selected.id} />
         </Suspense>

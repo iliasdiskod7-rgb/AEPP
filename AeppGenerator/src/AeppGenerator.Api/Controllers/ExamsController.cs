@@ -2,14 +2,20 @@ using AeppGenerator.Application.Abstractions;
 using AeppGenerator.Application.Exams;
 using AeppGenerator.Application.Llm;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using AeppGenerator.Api.Auth;
+using AeppGenerator.Api.Data;
+using System.Text.Json;
 using System.Net;
 
 namespace AeppGenerator.Api.Controllers;
 
-[ApiController]
+[ApiController, Authorize(Roles="TEACHER")]
 [Route("api/[controller]")]
-public sealed class ExamsController(ILlmExamGeneratorService generator) : ControllerBase
+public sealed class ExamsController(ILlmExamGeneratorService generator, AccountStore accounts) : ControllerBase
 {
+    // Το FallbackExamGeneratorService επιστρέφει ExamDto / HTTP 200 μετά από προσωρινές αποτυχίες.
+    // generationSource = examBank ενεργοποιεί το ενημερωτικό toast στον client.
     [HttpPost("generate")]
     [ProducesResponseType(typeof(ExamDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -22,7 +28,9 @@ public sealed class ExamsController(ILlmExamGeneratorService generator) : Contro
     {
         try
         {
-            return Ok(await generator.GenerateExamAsync(request, ct));
+            var exam = await generator.GenerateExamAsync(request, ct);
+            accounts.SaveExam(AuthService.UserId(User), exam.Title, "examDto", JsonSerializer.Serialize(exam, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+            return Ok(exam);
         }
         catch (ArgumentException ex)
         {

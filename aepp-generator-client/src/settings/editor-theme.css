@@ -1,0 +1,111 @@
+/* The effective palette is resolved from the application theme in SettingsContext. */
+[data-editor-theme] {
+  --code-bg: #0f172a;
+  --code-ink: #e2e8f0;
+  --code-comment: #a5b4c9;
+  --code-string: #86efac;
+  --code-number: #fbbf24;
+  --code-keyword: #93c5fd;
+  --code-gutter: #0f172a;
+  --code-edge: #334155;
+  --code-active: #172c49;
+  --code-update: #12352d;
+  --code-error: #411c27;
+  --code-error-ink: #fecaca;
+  --code-selection: #2563eb40;
+}
+[data-editor-theme="monokai"] {
+  --code-bg: #272822;
+  --code-ink: #f8f8f2;
+  --code-comment: #c4c2b6;
+  --code-string: #e6db74;
+  --code-number: #c5a3ff;
+  --code-keyword: #ff89ae;
+  --code-gutter: #272822;
+  --code-active: #30312b;
+  --code-update: #12352d;
+}
+[data-editor-theme="vscode"] {
+  --code-bg: #1e1e1e;
+  --code-ink: #e2e2e2;
+  --code-comment: #a3c990;
+  --code-string: #e6ab93;
+  --code-number: #c3dbb7;
+  --code-keyword: #8fc8f1;
+  --code-gutter: #1e1e1e;
+  --code-active: #20314a;
+  --code-update: #12352d;
+}
+[data-editor-theme="contrast"] {
+  --code-bg: #000000;
+  --code-ink: #ffffff;
+  --code-comment: #c0c0c0;
+  --code-string: #00ff9c;
+  --code-number: #ffffff;
+  --code-keyword: #ffff00;
+  --code-gutter: #000000;
+  --code-active: #00284d;
+  --code-update: #00351e;
+  --code-error: #490000;
+}
+[data-editor-theme="light"] {
+  --code-bg: #ffffff;
+  --code-ink: #0f172a;
+  --code-comment: #475569;
+  --code-string: #065f46;
+  --code-number: #92400e;
+  --code-keyword: #1d4ed8;
+  --code-gutter: #ffffff;
+  --code-edge: #e2e8f0;
+  --code-active: #eff6ff;
+  --code-update: #ecfdf5;
+  --code-error: #fef2f2;
+  --code-error-ink: #b91c1c;
+  --code-selection: #2563eb30;
+}
+.ide-editor-pane[data-editor-theme] .ide-editor-shell {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-size: var(--editor-font-size);
+  line-height: var(--editor-line-height);
+  color-scheme: inherit;
+}
+.ide-editor-pane[data-color-mode="light"] { color-scheme: light; }
+.ide-editor-pane[data-color-mode="dark"] { color-scheme: dark; }
+.ide-editor-pane[data-editor-theme] .ide-gutter {
+  background: var(--code-gutter);
+  color: var(--code-comment);
+  border-color: var(--code-edge);
+}
+.ide-editor-pane[data-editor-theme] :is(.ide-highlight, .ide-textarea) { tab-size: var(--editor-tab-size); }
+.ide-editor-pane[data-editor-theme] .ide-highlight { background: var(--code-bg); color: var(--code-ink); }
+.ide-editor-pane[data-editor-theme] .ide-code-area { background: var(--code-bg); }
+.ide-editor-pane[data-editor-theme] .ide-highlight > div { height: auto; min-height: var(--editor-line-height); }
+.ide-editor-pane[data-editor-theme] .ide-gutter > div { height: var(--editor-line-height); }
+.ide-editor-pane[data-editor-theme] .glossa-token-comment { color: var(--code-comment); }
+.ide-editor-pane[data-editor-theme] .glossa-token-string { color: var(--code-string); }
+.ide-editor-pane[data-editor-theme] .glossa-token-number { color: var(--code-number); }
+.ide-editor-pane[data-editor-theme] .glossa-token-keyword { color: var(--code-keyword); }
+.ide-editor-pane[data-editor-theme] .glossa-token-identifier { color: var(--code-ink); }
+.ide-editor-pane[data-editor-theme] .ide-active-line { background: var(--code-active); }
+.ide-editor-pane[data-editor-theme] .ide-updated-line { background: var(--code-update); }
+.ide-editor-pane[data-editor-theme] .error-line { background: var(--code-error); }
+.ide-editor-pane[data-editor-theme] .ide-gutter .error-line { color: var(--code-error-ink); }
+/* The textarea stays transparent so the syntax overlay remains visible in both modes. */
+.ide-editor-pane[data-editor-theme][data-color-mode] .ide-editor-shell .ide-textarea {
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--code-ink);
+}
+.ide-editor-pane[data-editor-theme] .ide-textarea::selection { background: var(--code-selection); }
+.ide-editor-pane[data-editor-theme][data-color-mode] .ide-editor-shell.ide-typing .ide-textarea {
+  color: var(--code-ink);
+  -webkit-text-fill-color: var(--code-ink);
+}
+.ide-editor-pane[data-editor-theme].ide-editor-wrap :is(.ide-highlight, .ide-textarea) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.ide-editor-pane[data-editor-theme].ide-editor-wrap .ide-highlight > div { min-width: 0; }

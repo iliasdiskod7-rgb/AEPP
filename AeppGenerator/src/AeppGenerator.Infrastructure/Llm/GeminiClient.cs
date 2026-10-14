@@ -8,10 +8,55 @@ using Microsoft.Extensions.Options;
 namespace AeppGenerator.Infrastructure.Llm;
 
 public sealed class GeminiClient(HttpClient httpClient, IOptions<LlmSettings> options,
-    ILogger<GeminiClient> logger)
+    ILogger<GeminiClient> logger, LlmRetryHandler? retryHandler = null)
 {
     public async Task<string> GenerateAsync(string systemPrompt, string userPrompt, CancellationToken ct)
-        => await GenerateAsync(systemPrompt, userPrompt, ExamJsonSchema.Schema, 0.9, ct);
+        => await GenerateExamWithRetryAsync(systemPrompt, userPrompt, ct);
+
+    private async Task<string> GenerateExamWithRetryAsync(string systemPrompt, string userPrompt, CancellationToken ct)
+    {
+        var settings = options.Value;
+        if (string.IsNullOrWhiteSpace(settings.ApiKey) || string.IsNullOrWhiteSpace(settings.Model))
+            throw new InvalidOperationException("Δεν έχει ρυθμιστεί κλειδί ή μοντέλο Gemini.");
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(TimeSpan.FromSeconds(settings.TotalTimeoutSeconds));
+        using var schema = JsonDocument.Parse(ExamJsonSchema.Schema);
+        var payload = new
+        {
+            systemInstruction = new { parts = new[] { new { text = systemPrompt } } },
+            contents = new[] { new { role = "user", parts = new[] { new { text = userPrompt } } } },
+            generationConfig = new
+            {
+                temperature = 0.9, maxOutputTokens = settings.MaxOutputTokens,
+                responseFormat = new { text = new { mimeType = "APPLICATION_JSON", schema = schema.RootElement } }
+            }
+        };
+        try
+        {
+            return await (retryHandler ?? new LlmRetryHandler()).ExecuteAsync(async token =>
+            {
+                using var attempt = CancellationTokenSource.CreateLinkedTokenSource(token);
+                attempt.CancelAfter(TimeSpan.FromSeconds(settings.AttemptTimeoutSeconds));
+                using var message = new HttpRequestMessage(HttpMethod.Post,
+                    $"v1beta/models/{Uri.EscapeDataString(settings.Model)}:generateContent");
+                message.Headers.Add("x-goog-api-key", settings.ApiKey);
+                message.Content = JsonContent.Create(payload);
+                using var response = await httpClient.SendAsync(message, attempt.Token);
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadAsStringAsync(attempt.Token);
+                logger.LogWarning("Gemini exam: HTTP {Status}", (int)response.StatusCode);
+                var error = Failure(response.StatusCode, "Το Gemini απέρριψε το αίτημα παραγωγής.");
+                if (!LlmRetryHandler.IsTransient(error)) throw error;
+                var retryAfter = response.Headers.RetryAfter;
+                throw new LlmTransientException(response.StatusCode,
+                    retryAfter?.Delta ?? (retryAfter?.Date - DateTimeOffset.UtcNow));
+            }, deadline.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw Failure(HttpStatusCode.GatewayTimeout, "Η παραγωγή ξεπέρασε τον διαθέσιμο χρόνο.");
+        }
+    }
 
     public async Task<string> GenerateAsync(string systemPrompt, string userPrompt,
         string responseSchema, double temperature, CancellationToken ct)
@@ -45,7 +90,7 @@ public sealed class GeminiClient(HttpClient httpClient, IOptions<LlmSettings> op
             {
                 foreach (var model in models.Where(x => !unavailableModels.Contains(x)))
                 {
-                    deadline.Token.ThrowIfCancellationRequested();
+                       deadline.Token.ThrowIfCancellationRequested();
                     using var attempt = CancellationTokenSource.CreateLinkedTokenSource(deadline.Token);
                     attempt.CancelAfter(TimeSpan.FromSeconds(settings.AttemptTimeoutSeconds));
                     using var message = new HttpRequestMessage(HttpMethod.Post,

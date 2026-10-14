@@ -1,12 +1,47 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: "Segoe UI", Inter, system-ui, sans-serif;
   --font-serif: Georgia, "Times New Roman", serif;
 }
 
-:root { font-family: var(--font-sans); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; color-scheme: light; }
-body { margin: 0; min-width: 320px; }
+:root {
+  --bg-primary: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-muted: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-color: #e2e8f0;
+  --accent: #1d4ed8;
+  --on-accent: #ffffff;
+  --error-ink: #b91c1c;
+  --error-surface: #fef2f2;
+  --success-ink: #065f46;
+  --success-surface: #ecfdf5;
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+}
+:root[data-theme="dark"], :root.dark {
+  --bg-primary: #0b1220;
+  --bg-surface: #151f30;
+  --bg-surface-muted: #1e293b;
+  --text-primary: #e2e8f0;
+  --text-secondary: #a5b4c9;
+  --border-color: #334155;
+  --accent: #2563eb;
+  --on-accent: #ffffff;
+  --error-ink: #fecaca;
+  --error-surface: #411c27;
+  --success-ink: #a7f3d0;
+  --success-surface: #12352d;
+  color-scheme: dark;
+}
+html, #app { min-height: 100%; background: var(--bg-primary); color: var(--text-primary); }
+body { margin: 0; min-width: 320px; background: var(--bg-primary); color: var(--text-primary); }
 button, input, textarea { font: inherit; }
 button:not(:disabled) { cursor: pointer; }
 :focus-visible { outline: 2px solid #0f766e; outline-offset: 3px; }
@@ -27,8 +62,64 @@ button:not(:disabled) { cursor: pointer; }
 .exam-prose table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 12px; }
 .exam-prose th, .exam-prose td { border: 1px solid #e7e5e4; padding: 8px 12px; text-align: left; }
 .exam-prose th { background: #f5f5f4; color: #244f50; }
-.skip-link { position: fixed; left: 12px; top: -60px; z-index: 20; background: white; padding: 12px; border-radius: 6px; }
+.skip-link { position: fixed; left: 12px; top: -60px; z-index: 20; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; }
 .skip-link:focus { top: 12px; }
+
+@media screen {
+  :root[data-theme="dark"], :root.dark {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+  :root[data-theme="dark"] .dashboard-shell, :root.dark .dashboard-shell {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+  :root[data-theme="dark"] :is([class~="bg-white"], [class*="bg-white/"], [class~="bg-slate-50"], [class~="bg-slate-100"], [class~="bg-gray-50"], [class~="bg-gray-100"], [class~="bg-zinc-50"], [class~="bg-zinc-100"], [class~="bg-neutral-50"], [class~="bg-neutral-100"], [class~="bg-stone-50"], [class~="bg-stone-100"], [class~="bg-slate-50/80"], [class~="bg-slate-50/60"], [class~="bg-slate-50/50"]),
+  :root.dark :is([class~="bg-white"], [class*="bg-white/"], [class~="bg-slate-50"], [class~="bg-slate-100"], [class~="bg-gray-50"], [class~="bg-gray-100"], [class~="bg-zinc-50"], [class~="bg-zinc-100"], [class~="bg-neutral-50"], [class~="bg-neutral-100"], [class~="bg-stone-50"], [class~="bg-stone-100"], [class~="bg-slate-50/80"], [class~="bg-slate-50/60"], [class~="bg-slate-50/50"]) {
+    background-color: var(--bg-surface) !important;
+  }
+  :root[data-theme="dark"] :is([class~="bg-blue-50"], [class~="bg-blue-100"], [class~="bg-indigo-50"], [class~="bg-indigo-100"], [class~="bg-violet-50"], [class~="bg-violet-100"], [class~="bg-purple-50"], [class~="bg-purple-100"], [class~="bg-cyan-50"], [class~="bg-cyan-100"], [class~="bg-sky-50"], [class~="bg-sky-100"], [class~="bg-teal-50"], [class~="bg-teal-100"]),
+  :root.dark :is([class~="bg-blue-50"], [class~="bg-blue-100"], [class~="bg-indigo-50"], [class~="bg-indigo-100"], [class~="bg-violet-50"], [class~="bg-violet-100"], [class~="bg-purple-50"], [class~="bg-purple-100"], [class~="bg-cyan-50"], [class~="bg-cyan-100"], [class~="bg-sky-50"], [class~="bg-sky-100"], [class~="bg-teal-50"], [class~="bg-teal-100"]) {
+    background-color: #172c49 !important;
+  }
+  :root[data-theme="dark"] :is([class~="bg-emerald-50"], [class~="bg-emerald-100"], [class~="bg-green-50"], [class~="bg-green-100"]),
+  :root.dark :is([class~="bg-emerald-50"], [class~="bg-emerald-100"], [class~="bg-green-50"], [class~="bg-green-100"]) {
+    background-color: #12352d !important;
+  }
+  :root[data-theme="dark"] :is([class~="bg-amber-50"], [class~="bg-amber-100"], [class~="bg-yellow-50"], [class~="bg-yellow-100"], [class~="bg-orange-50"], [class~="bg-orange-100"]),
+  :root.dark :is([class~="bg-amber-50"], [class~="bg-amber-100"], [class~="bg-yellow-50"], [class~="bg-yellow-100"], [class~="bg-orange-50"], [class~="bg-orange-100"]) {
+    background-color: #332a1a !important;
+  }
+  :root[data-theme="dark"] [class~="bg-amber-50/60"], :root.dark [class~="bg-amber-50/60"] {
+    background-color: #332a1a !important;
+  }
+  :root[data-theme="dark"] :is([class~="bg-rose-50"], [class~="bg-rose-100"], [class~="bg-red-50"], [class~="bg-red-100"], [class~="bg-pink-50"], [class~="bg-pink-100"], [class~="bg-fuchsia-50"], [class~="bg-fuchsia-100"]),
+  :root.dark :is([class~="bg-rose-50"], [class~="bg-rose-100"], [class~="bg-red-50"], [class~="bg-red-100"], [class~="bg-pink-50"], [class~="bg-pink-100"], [class~="bg-fuchsia-50"], [class~="bg-fuchsia-100"]) {
+    background-color: #3b202a !important;
+  }
+  :root[data-theme="dark"] :is([class~="text-slate-900"], [class~="text-slate-800"], [class~="text-slate-700"], [class~="text-gray-900"], [class~="text-gray-800"], [class~="text-gray-700"], [class~="text-stone-900"], [class~="text-stone-800"], [class~="text-stone-700"]),
+  :root.dark :is([class~="text-slate-900"], [class~="text-slate-800"], [class~="text-slate-700"], [class~="text-gray-900"], [class~="text-gray-800"], [class~="text-gray-700"], [class~="text-stone-900"], [class~="text-stone-800"], [class~="text-stone-700"]) {
+    color: var(--text-primary) !important;
+  }
+  :root[data-theme="dark"] :is([class~="text-slate-600"], [class~="text-slate-500"], [class~="text-slate-400"], [class~="text-gray-600"], [class~="text-gray-500"], [class~="text-gray-400"], [class~="text-stone-600"], [class~="text-stone-500"], [class~="text-stone-400"]),
+  :root.dark :is([class~="text-slate-600"], [class~="text-slate-500"], [class~="text-slate-400"], [class~="text-gray-600"], [class~="text-gray-500"], [class~="text-gray-400"], [class~="text-stone-600"], [class~="text-stone-500"], [class~="text-stone-400"]) {
+    color: var(--text-secondary) !important;
+  }
+  :root[data-theme="dark"] :is([class~="border-slate-100"], [class~="border-slate-200"], [class~="border-slate-300"], [class~="border-gray-100"], [class~="border-gray-200"], [class~="border-gray-300"]),
+  :root.dark :is([class~="border-slate-100"], [class~="border-slate-200"], [class~="border-slate-300"], [class~="border-gray-100"], [class~="border-gray-200"], [class~="border-gray-300"]) {
+    border-color: var(--border-color) !important;
+  }
+  :root[data-theme="dark"] :is([class~="hover:bg-slate-50"]:hover, [class~="hover:bg-stone-100"]:hover, [class~="hover:bg-blue-50"]:hover),
+  :root.dark :is([class~="hover:bg-slate-50"]:hover, [class~="hover:bg-stone-100"]:hover, [class~="hover:bg-blue-50"]:hover) {
+    background-color: var(--bg-surface-muted) !important;
+  }
+  :root[data-theme="dark"] :is(input:not([type="range"]):not([type="checkbox"]), textarea, select),
+  :root.dark :is(input:not([type="range"]):not([type="checkbox"]), textarea, select) {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+  }
+}
 
 @media print {
   @page { size: A4; margin: 16mm; }

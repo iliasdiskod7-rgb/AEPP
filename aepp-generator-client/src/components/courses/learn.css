@@ -1,0 +1,17 @@
+.learn-workspace { max-width: 1320px; margin-inline: auto; color: var(--text-primary); min-width: 0; }
+.learn-heading { margin-bottom: 24px; }
+.learn-heading h1 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; letter-spacing: -.02em; }
+.learn-heading p { margin-top: 8px; max-width: 70ch; color: var(--text-secondary); line-height: 1.7; }
+.learn-tabs { display: flex; gap: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; }
+.learn-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 8px; min-height: 48px; border-bottom: 3px solid transparent; color: var(--text-secondary); font-weight: 600; }
+.learn-tabs button[aria-selected=true] { border-color: var(--accent); color: var(--text-primary); }
+.learn-tabs button:hover { background: var(--bg-surface-muted); }
+.learn-tabs button:focus-visible, .methodology-chips button:focus-visible, .learn-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.learn-back { display: inline-flex; gap: 8px; align-items: center; margin-bottom: 20px; min-height: 44px; color: var(--text-primary); text-align: start; }
+.related-methodologies { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+.related-methodologies h3 { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 15px; font-weight: 600; }
+.methodology-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.methodology-chips button { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--bg-surface); color: var(--text-primary); text-align: start; font-size: 14px; line-height: 1.5; }
+.methodology-chips button svg { flex-shrink: 0; }
+.methodology-chips button:hover { background: var(--bg-surface-muted); border-color: var(--accent); }
+@media (max-width: 480px) { .learn-tabs { gap: 4px; } .learn-tabs button { padding-inline: 6px; font-size: 14px; } .learn-tabs svg { flex-shrink: 0; width: 16px; } }
