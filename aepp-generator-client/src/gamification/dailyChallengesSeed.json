@@ -1,0 +1,986 @@
+[
+  {
+    "id": "challenge-day-01",
+    "dayIndex": 1,
+    "topic": "Αθροιστής και περατότητα",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Κάθε αλγόριθμος πρέπει να τερματίζει έπειτα από πεπερασμένο πλήθος βημάτων.",
+        "correctAnswer": true,
+        "explanation": "Σωστό. Η περατότητα είναι ένα από τα κριτήρια ενός αλγορίθμου. Μια επανάληψη που συνεχίζεται επ’ άπειρον παραβιάζει αυτό το κριτήριο, ακόμη και αν κάθε επιμέρους εντολή της είναι σαφής. (Σχολικό βιβλίο, §2.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 2 · §2.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index2_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να υπολογίζεται το άθροισμα από 1 έως 3.",
+        "codeSnippet": "Σ <- [BLANK]\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ 3\n  Σ <- Σ + Ι\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Σ, Ι.",
+        "correctAnswer": "0",
+        "options": [
+          "0",
+          "1",
+          "3"
+        ],
+        "explanation": "Ο Σ αρχικοποιείται στο 0, το ουδέτερο στοιχείο της πρόσθεσης. Οι προσθέσεις 1, 2 και 3 δίνουν διαδοχικά Σ = 1, 3, 6. Αρχική τιμή 1 θα πρόσθετε μία ανεπιθύμητη μονάδα. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "6"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Σ <- 0\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ 4\n  Σ <- Σ + Ι\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Σ, Ι.",
+        "correctAnswer": "10",
+        "explanation": "Για Ι = 1, 2, 3, 4, ο Σ γίνεται αντίστοιχα 1, 3, 6, 10. Το ΓΡΑΨΕ βρίσκεται έξω από την επανάληψη και εμφανίζει μόνο το τελικό 10. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "10"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-02",
+    "dayIndex": 2,
+    "topic": "Γινόμενο και εκχώρηση",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Στην εκχώρηση Χ <- Χ + 1 μεταβάλλεται πρώτα το Χ και μετά υπολογίζεται το δεξί μέλος.",
+        "correctAnswer": false,
+        "explanation": "Λάθος. Πρώτα υπολογίζεται η έκφραση του δεξιού μέλους με την προηγούμενη τιμή της μεταβλητής. Έπειτα το αποτέλεσμα αποθηκεύεται στο αριστερό μέλος. Αν Χ = 4, η νέα τιμή είναι 5. (Σχολικό βιβλίο, §7.8.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 7 · §7.8",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index7_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να υπολογίζεται το γινόμενο από 1 έως 3.",
+        "codeSnippet": "Π <- [BLANK]\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ 3\n  Π <- Π * Ι\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Π",
+        "declarations": "Ακέραιες Π, Ι.",
+        "correctAnswer": "1",
+        "options": [
+          "0",
+          "1",
+          "-1"
+        ],
+        "explanation": "Το γινόμενο αρχικοποιείται στο 1, το ουδέτερο στοιχείο του πολλαπλασιασμού. Για Ι = 1, 2, 3, το Π παίρνει τις τιμές 1, 2, 6. Αρχικοποίηση στο 0 θα μηδένιζε όλα τα γινόμενα. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "6"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Π <- 1\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ 4\n  Π <- Π * Ι\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Π",
+        "declarations": "Ακέραιες Π, Ι.",
+        "correctAnswer": "24",
+        "explanation": "Οι διαδοχικές τιμές του Π είναι 1, 2, 6, 24. Το τελικό όριο 4 περιλαμβάνεται, άρα υπολογίζεται και ο παράγοντας 4. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "24"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-03",
+    "dayIndex": 3,
+    "topic": "Άρτιοι και βήμα επανάληψης",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Στη ΓΙΑ επιτρέπεται να αλλάζουμε τον μετρητή με εντολή εκχώρησης μέσα στο σώμα της.",
+        "correctAnswer": false,
+        "explanation": "Λάθος. Η μεταβολή του μετρητή καθορίζεται από το βήμα της ΓΙΑ. Δεν πρέπει να παρεμβάλλεται εκχώρηση που αλλάζει τη μεταβλητή ελέγχου μέσα στο σώμα. Ο διερμηνευτής του έργου απορρίπτει αυτή την περίπτωση. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να αθροίζονται οι άρτιοι από 2 έως 6.",
+        "codeSnippet": "Σ <- 0\nΓΙΑ Ι ΑΠΟ 2 ΜΕΧΡΙ 6 ΜΕ ΒΗΜΑ [BLANK]\n  Σ <- Σ + Ι\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Σ, Ι.",
+        "correctAnswer": "2",
+        "options": [
+          "1",
+          "-2",
+          "2"
+        ],
+        "explanation": "Με βήμα 2 ο Ι παίρνει τις τιμές 2, 4, 6 και το άθροισμα γίνεται 12. Με βήμα 1 περιλαμβάνονται και περιττοί, ενώ με -2 δεν εκτελείται το σώμα για αυτά τα όρια. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "12"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Σ <- 0\nΓΙΑ Ι ΑΠΟ 2 ΜΕΧΡΙ 8 ΜΕ ΒΗΜΑ 2\n  Σ <- Σ + Ι\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Σ, Ι.",
+        "correctAnswer": "20",
+        "explanation": "Ο Ι παίρνει ακριβώς τις τιμές 2, 4, 6, 8. Ο Σ εξελίσσεται σε 2, 6, 12, 20 και η μοναδική έξοδος είναι 20. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "20"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-04",
+    "dayIndex": 4,
+    "topic": "Φθίνουσα ΓΙΑ και όρια",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Η ΓΙΑ Ι ΑΠΟ 4 ΜΕΧΡΙ 1 εκτελεί τέσσερις επαναλήψεις όταν παραλείπεται το βήμα.",
+        "correctAnswer": false,
+        "explanation": "Λάθος. Το βήμα που παραλείπεται είναι +1. Με αρχική τιμή 4 και τελική 1 δεν εκτελείται το σώμα. Για φθίνουσα καταμέτρηση απαιτείται αρνητικό βήμα, π.χ. ΜΕ ΒΗΜΑ -1. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να μετρώνται οι ακέραιοι από 3 μέχρι 1.",
+        "codeSnippet": "Π <- 0\nΓΙΑ Ι ΑΠΟ 3 ΜΕΧΡΙ 1 ΜΕ ΒΗΜΑ [BLANK]\n  Π <- Π + 1\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Π",
+        "declarations": "Ακέραιες Π, Ι.",
+        "correctAnswer": "-1",
+        "options": [
+          "-1",
+          "1",
+          "-2"
+        ],
+        "explanation": "Το -1 παράγει Ι = 3, 2, 1. Ο Π μετρά τις τρεις εκτελέσεις. Το +1 δεν οδηγεί σε επανάληψη, ενώ το -2 επισκέπτεται μόνο 3 και 1. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "3"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Π <- 0\nΓΙΑ Ι ΑΠΟ 4 ΜΕΧΡΙ 1 ΜΕ ΒΗΜΑ -1\n  Π <- Π + 1\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Π",
+        "declarations": "Ακέραιες Π, Ι.",
+        "correctAnswer": "4",
+        "explanation": "Οι τιμές ελέγχου είναι 4, 3, 2, 1. Σε κάθε εκτέλεση προστίθεται 1 στον Π, οπότε εμφανίζεται 4. Δεν χρειάζεται να χρησιμοποιήσουμε την τιμή του Ι μετά το τέλος της ΓΙΑ. (Σχολικό βιβλίο, §8.2.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "4"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-05",
+    "dayIndex": 5,
+    "topic": "ΟΣΟ και αρχικός έλεγχος",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Το σώμα της ΟΣΟ εκτελείται υποχρεωτικά τουλάχιστον μία φορά.",
+        "correctAnswer": false,
+        "explanation": "Λάθος. Η συνθήκη ελέγχεται πριν από το σώμα. Αν είναι ψευδής στον πρώτο έλεγχο, δεν εκτελείται καμία επανάληψη. Η εγγύηση μίας τουλάχιστον εκτέλεσης αφορά τη ΜΕΧΡΙΣ_ΟΤΟΥ. (Σχολικό βιβλίο, §8.2.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να διπλασιάζεται το Χ από 1 μέχρι να φτάσει ή να ξεπεράσει το 15.",
+        "codeSnippet": "Χ <- 1\nΟΣΟ Χ [BLANK] 15 ΕΠΑΝΑΛΑΒΕ\n  Χ <- Χ * 2\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Χ",
+        "declarations": "Ακέραιες Χ.",
+        "correctAnswer": "<",
+        "options": [
+          ">",
+          "<",
+          "="
+        ],
+        "explanation": "Όσο Χ < 15 συνεχίζονται οι διπλασιασμοί: 1, 2, 4, 8, 16. Στο 16 η συνθήκη είναι ψευδής. Οι άλλες επιλογές είναι ψευδείς ήδη για Χ = 1 και αφήνουν το Χ αμετάβλητο. (Σχολικό βιβλίο, §8.2.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "16"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Χ <- 1\nΟΣΟ Χ < 20 ΕΠΑΝΑΛΑΒΕ\n  Χ <- Χ * 2\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Χ",
+        "declarations": "Ακέραιες Χ.",
+        "correctAnswer": "32",
+        "explanation": "Πριν από τους ελέγχους το Χ είναι διαδοχικά 1, 2, 4, 8, 16, 32. Το 16 < 20 είναι αληθές και προκαλεί ακόμη έναν διπλασιασμό. Το 32 < 20 είναι ψευδές, άρα εμφανίζεται 32. (Σχολικό βιβλίο, §8.2.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "32"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-06",
+    "dayIndex": 6,
+    "topic": "ΟΣΟ και συμπερίληψη τελικού ορίου",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Η σύζευξη δύο λογικών εκφράσεων με ΚΑΙ είναι αληθής μόνο όταν και οι δύο εκφράσεις είναι αληθείς.",
+        "correctAnswer": true,
+        "explanation": "Σωστό. Το ΚΑΙ απαιτεί να ισχύουν συγχρόνως και οι δύο όροι. Για παράδειγμα, Χ >= 1 ΚΑΙ Χ <= 3 εκφράζει συμμετοχή στο κλειστό διάστημα [1, 3]. (Σχολικό βιβλίο, §8.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να προστίθενται οι τιμές Ι = 1 έως 3.",
+        "codeSnippet": "Ι <- 1\nΣ <- 0\nΟΣΟ Ι [BLANK] 3 ΕΠΑΝΑΛΑΒΕ\n  Σ <- Σ + Ι\n  Ι <- Ι + 1\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Ι, Σ.",
+        "correctAnswer": "<=",
+        "options": [
+          "<",
+          ">",
+          "<="
+        ],
+        "explanation": "Η συνθήκη Ι <= 3 περιλαμβάνει και το 3. Ο Σ γίνεται 1, 3, 6. Με Ι < 3 θα έλειπε ο τελευταίος όρος, ενώ με Ι > 3 δεν θα γινόταν καμία πρόσθεση. (Σχολικό βιβλίο, §8.2.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "6"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Ι <- 1\nΣ <- 0\nΟΣΟ Ι <= 4 ΕΠΑΝΑΛΑΒΕ\n  Σ <- Σ + Ι\n  Ι <- Ι + 1\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Ι, Σ.",
+        "correctAnswer": "10",
+        "explanation": "Μετά από κάθε σώμα, τα ζεύγη (Σ, Ι) είναι (1, 2), (3, 3), (6, 4), (10, 5). Ο επόμενος έλεγχος 5 <= 4 είναι ψευδής και η έξοδος είναι 10. (Σχολικό βιβλίο, §8.2.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "10"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-07",
+    "dayIndex": 7,
+    "topic": "ΜΕΧΡΙΣ_ΟΤΟΥ και τερματισμός",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Η ΜΕΧΡΙΣ_ΟΤΟΥ τερματίζει την επανάληψη όταν η συνθήκη της γίνει αληθής.",
+        "correctAnswer": true,
+        "explanation": "Σωστό. Η συνθήκη ελέγχεται στο τέλος. Όταν είναι ψευδής επαναλαμβάνεται το σώμα· όταν γίνει αληθής η εκτέλεση συνεχίζεται μετά τη δομή. Το σώμα εκτελείται τουλάχιστον μία φορά. (Σχολικό βιβλίο, §8.2.2.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.2",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να αυξάνεται το Χ κατά 3 μέχρι να φτάσει ή να ξεπεράσει το 6.",
+        "codeSnippet": "Χ <- 0\nΑΡΧΗ_ΕΠΑΝΑΛΗΨΗΣ\n  Χ <- Χ + 3\nΜΕΧΡΙΣ_ΟΤΟΥ Χ [BLANK] 6\nΓΡΑΨΕ Χ",
+        "declarations": "Ακέραιες Χ.",
+        "correctAnswer": ">=",
+        "options": [
+          ">=",
+          "<",
+          "<="
+        ],
+        "explanation": "Μετά τις αυξήσεις, το Χ γίνεται 3 και 6. Η συνθήκη Χ >= 6 είναι πρώτα ψευδής και έπειτα αληθής. Οι επιλογές < και <= σταματούν ήδη στο 3 και δεν πετυχαίνουν τον στόχο. (Σχολικό βιβλίο, §8.2.2.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.2",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "6"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Χ <- 0\nΑΡΧΗ_ΕΠΑΝΑΛΗΨΗΣ\n  Χ <- Χ + 3\nΜΕΧΡΙΣ_ΟΤΟΥ Χ >= 8\nΓΡΑΨΕ Χ",
+        "declarations": "Ακέραιες Χ.",
+        "correctAnswer": "9",
+        "explanation": "Οι τιμές μετά το σώμα είναι 3, 6, 9. Οι έλεγχοι Χ >= 8 είναι αντίστοιχα ψευδής, ψευδής, αληθής. Εμφανίζεται 9, χωρίς να απαιτείται το Χ να γίνει ακριβώς 8. (Σχολικό βιβλίο, §8.2.2.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.2.2",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "9"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-08",
+    "dayIndex": 8,
+    "topic": "Ψηφία με MOD και DIV",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Για θετικούς ακεραίους, οι εκφράσεις 17 DIV 5 και 17 MOD 5 έχουν την ίδια τιμή.",
+        "correctAnswer": false,
+        "explanation": "Λάθος. Από την ισότητα 17 = 3 * 5 + 2 προκύπτει πηλίκο 3 και υπόλοιπο 2. Το DIV δίνει το πηλίκο, ενώ το MOD το υπόλοιπο. Δεν είναι εναλλάξιμοι τελεστές. (Σχολικό βιβλίο, §7.5.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 7 · §7.5",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index7_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να αθροίζονται τα ψηφία του θετικού ακεραίου 337.",
+        "codeSnippet": "Χ <- 337\nΣ <- 0\nΟΣΟ Χ > 0 ΕΠΑΝΑΛΑΒΕ\n  Σ <- Σ + Χ [BLANK] 10\n  Χ <- Χ DIV 10\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Χ, Σ.",
+        "correctAnswer": "MOD",
+        "options": [
+          "DIV",
+          "MOD",
+          "*"
+        ],
+        "explanation": "Το Χ MOD 10 απομονώνει το τελευταίο ψηφίο. Για Χ = 337, 33, 3 προστίθενται 7, 3, 3 και εμφανίζεται 13. Το Χ DIV 10 αφαιρεί το ψηφίο που μόλις επεξεργαστήκαμε. (Σχολικό βιβλίο, §7.5.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 7 · §7.5",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index7_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "13"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Χ <- 437\nΣ <- 0\nΟΣΟ Χ > 0 ΕΠΑΝΑΛΑΒΕ\n  Σ <- Σ + Χ MOD 10\n  Χ <- Χ DIV 10\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Χ, Σ.",
+        "correctAnswer": "14",
+        "explanation": "Τα ζεύγη (Χ πριν από το σώμα, Σ μετά την πρόσθεση) είναι (437, 7), (43, 10), (4, 14). Η τελευταία ακέραια διαίρεση δίνει Χ = 0 και τερματίζει την ΟΣΟ. (Σχολικό βιβλίο, §7.5.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 7 · §7.5",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index7_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "14"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-09",
+    "dayIndex": 9,
+    "topic": "Καταμέτρηση ψηφίων και παρενθέσεις",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Οι εκφράσεις 2 + 3 * 4 και (2 + 3) * 4 έχουν την ίδια τιμή.",
+        "correctAnswer": false,
+        "explanation": "Λάθος. Ο πολλαπλασιασμός προηγείται της πρόσθεσης: η πρώτη έκφραση δίνει 14. Στη δεύτερη προηγείται η παρένθεση και το αποτέλεσμα είναι 20. (Σχολικό βιβλίο, §7.7.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 7 · §7.7",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index7_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να μετρώνται τα ψηφία του θετικού ακεραίου 1007.",
+        "codeSnippet": "Χ <- 1007\nΠ <- 0\nΟΣΟ Χ > 0 ΕΠΑΝΑΛΑΒΕ\n  Π <- Π + 1\n  Χ <- Χ [BLANK] 10\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Π",
+        "declarations": "Ακέραιες Χ, Π.",
+        "correctAnswer": "DIV",
+        "options": [
+          "MOD",
+          "*",
+          "DIV"
+        ],
+        "explanation": "Η ακέραια διαίρεση με 10 δίνει διαδοχικά Χ = 100, 10, 1, 0, άρα γίνονται τέσσερις επαναλήψεις. Με MOD ο Χ γίνεται 7 και κατόπιν παραμένει 7, οπότε δεν τερματίζει. Η εκφώνηση αφορά θετικό αριθμό, όχι το 0. (Σχολικό βιβλίο, §7.5.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 7 · §7.5",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index7_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "4"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Χ <- 10007\nΠ <- 0\nΟΣΟ Χ > 0 ΕΠΑΝΑΛΑΒΕ\n  Π <- Π + 1\n  Χ <- Χ DIV 10\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Π",
+        "declarations": "Ακέραιες Χ, Π.",
+        "correctAnswer": "5",
+        "explanation": "Ο Χ παίρνει τις τιμές 10007, 1000, 100, 10, 1 πριν από τα πέντε σώματα. Ο Π φτάνει στο 5 και κατόπιν Χ = 0. Τα εσωτερικά μηδενικά είναι κανονικά ψηφία και συνυπολογίζονται. (Σχολικό βιβλίο, §7.5.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 7 · §7.5",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index7_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "5"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-10",
+    "dayIndex": 10,
+    "topic": "Επιλογή και σύγκριση",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Σε μια ακολουθία ΑΝ...ΑΛΛΙΩΣ_ΑΝ εκτελούνται όλοι οι κλάδοι των οποίων οι συνθήκες είναι αληθείς.",
+        "correctAnswer": false,
+        "explanation": "Λάθος. Εκτελείται ο πρώτος κλάδος με αληθή συνθήκη και οι επόμενοι παραλείπονται. Αν δεν ισχύει κανένας, εκτελείται ο ΑΛΛΙΩΣ, εφόσον υπάρχει. Αυτό διαφέρει από διαδοχικές ανεξάρτητες ΑΝ. (Σχολικό βιβλίο, §8.1.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.1.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να εμφανίζεται η μεγαλύτερη από τις τιμές 5 και 10.",
+        "codeSnippet": "Α <- 5\nΒ <- 10\nΜ <- Α\nΑΝ Β [BLANK] Μ ΤΟΤΕ\n  Μ <- Β\nΤΕΛΟΣ_ΑΝ\nΓΡΑΨΕ Μ",
+        "declarations": "Ακέραιες Α, Β, Μ.",
+        "correctAnswer": ">",
+        "options": [
+          ">",
+          "<",
+          "="
+        ],
+        "explanation": "Ο Μ αρχικοποιείται με το Α = 5. Η σύγκριση Β > Μ είναι αληθής για Β = 10 και ο Μ γίνεται 10. Με < ή = ο Μ θα έμενε 5. (Σχολικό βιβλίο, §8.1.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.1.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-6"
+        },
+        "tags": [],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "10"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Α <- 6\nΒ <- 11\nΜ <- Α\nΑΝ Β > Μ ΤΟΤΕ\n  Μ <- Β\nΤΕΛΟΣ_ΑΝ\nΓΡΑΨΕ Μ",
+        "declarations": "Ακέραιες Α, Β, Μ.",
+        "correctAnswer": "11",
+        "explanation": "Αρχικά Μ = 6. Επειδή 11 > 6, εκτελείται η εκχώρηση Μ <- Β. Το ΓΡΑΨΕ εμφανίζει 11. Η αρχικοποίηση από πραγματική υποψήφια τιμή αποφεύγει αυθαίρετες τιμές εκκίνησης. (Σχολικό βιβλίο, §8.1.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 8 · §8.1.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index8_1.html",
+          "lessonId": "lesson-6"
+        },
+        "tags": [],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "11"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-11",
+    "dayIndex": 11,
+    "topic": "Αντιμετάθεση και παράμετροι",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Οι πραγματικές και οι τυπικές παράμετροι ενός υποπρογράμματος πρέπει να αντιστοιχούν ως προς πλήθος, σειρά και τύπο.",
+        "correctAnswer": true,
+        "explanation": "Σωστό. Κάθε πραγματική παράμετρος αντιστοιχεί στην τυπική παράμετρο της ίδιας θέσης. Ίδια ονόματα δεν απαιτούνται. Διαφορετικό πλήθος ή ασύμβατος τύπος δεν αποτελεί έγκυρη κλήση. (Σχολικό βιβλίο, §10.5.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 10 · §10.5.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index10_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να ανταλλάσσονται οι τιμές των Α και Β, αρχικά 6 και 11.",
+        "codeSnippet": "Α <- 6\nΒ <- 11\nΤ <- [BLANK]\nΑ <- Β\nΒ <- Τ\nΓΡΑΨΕ Β",
+        "declarations": "Ακέραιες Α, Β, Τ.",
+        "correctAnswer": "Α",
+        "options": [
+          "Β",
+          "Α",
+          "0"
+        ],
+        "explanation": "Η Τ πρέπει να διατηρήσει την παλιά τιμή του Α, δηλαδή 6, πριν το Α πάρει το 11. Έτσι τελικά Α = 11 και Β = 6. Αν αποθηκευόταν το Β, θα χάναμε την παλιά τιμή του Α. (Σχολικό βιβλίο, §7.8.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 7 · §7.8",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index7_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "6"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Α <- 7\nΒ <- 12\nΤ <- Α\nΑ <- Β\nΒ <- Τ\nΓΡΑΨΕ Β",
+        "declarations": "Ακέραιες Α, Β, Τ.",
+        "correctAnswer": "7",
+        "explanation": "Η Τ γίνεται 7, έπειτα Α = 12 και Β = 7. Εμφανίζεται μόνο το Β, δηλαδή 7. Η προσωρινή μεταβλητή προστατεύει την αρχική τιμή από την αντικατάστασή της. (Σχολικό βιβλίο, §7.8.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 7 · §7.8",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index7_1.html",
+          "lessonId": "lesson-12"
+        },
+        "tags": [],
+        "verification": {
+          "initialization": "",
+          "expectedOutput": "7"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-12",
+    "dayIndex": 12,
+    "topic": "Διάσχιση μονοδιάστατου πίνακα",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Όλα τα στοιχεία ενός πίνακα στη ΓΛΩΣΣΑ έχουν τον ίδιο τύπο δεδομένων.",
+        "correctAnswer": true,
+        "explanation": "Σωστό. Ο πίνακας δηλώνεται με έναν τύπο για όλα τα στοιχεία του. Η δήλωση ΑΚΕΡΑΙΕΣ: Α[3] ορίζει τρία ακέραια στοιχεία, στις θέσεις 1, 2 και 3. Δεν δημιουργεί στοιχεία διαφορετικών τύπων. (Σχολικό βιβλίο, §9.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 9 · §9.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index9_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να αθροίζονται όλες οι θέσεις του Α[3], όπου Α[Ι] = 2 * Ι.",
+        "codeSnippet": "Σ <- 0\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ [BLANK]\n  Σ <- Σ + Α[Ι]\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Σ, Ι, Α[3]. Αρχικοποίηση πριν από το τμήμα: Α[1] <- 2 · Α[2] <- 4 · Α[3] <- 6.",
+        "correctAnswer": "3",
+        "options": [
+          "2",
+          "0",
+          "3"
+        ],
+        "explanation": "Το τελικό όριο πρέπει να είναι 3 ώστε να χρησιμοποιηθούν όλες οι δηλωμένες θέσεις. Ο Σ γίνεται 2, 6, 12. Το 2 παραλείπει το τελευταίο στοιχείο και το 0 δεν επιτρέπει καμία επανάληψη. (Σχολικό βιβλίο, §9.4.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 9 · §9.4",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index9_1.html",
+          "lessonId": null
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "Α[1] <- 2\nΑ[2] <- 4\nΑ[3] <- 6",
+          "expectedOutput": "12"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Σ <- 0\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ 4\n  Σ <- Σ + Α[Ι]\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Σ, Ι, Α[4]. Αρχικοποίηση πριν από το τμήμα: Α[1] <- 2 · Α[2] <- 4 · Α[3] <- 6 · Α[4] <- 8.",
+        "correctAnswer": "20",
+        "explanation": "Οι δηλωμένες αρχικές τιμές είναι 2, 4, 6, 8. Ο Σ μετά από κάθε θέση γίνεται 2, 6, 12, 20. Δεν γίνεται προσπέλαση στη θέση 0 ή πέρα από τη θέση 4. (Σχολικό βιβλίο, §9.4.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 9 · §9.4",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index9_1.html",
+          "lessonId": null
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "Α[1] <- 2\nΑ[2] <- 4\nΑ[3] <- 6\nΑ[4] <- 8",
+          "expectedOutput": "20"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-13",
+    "dayIndex": 13,
+    "topic": "Σειριακή αναζήτηση και θέση",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Η σειριακή αναζήτηση εφαρμόζεται μόνο σε ταξινομημένο πίνακα.",
+        "correctAnswer": false,
+        "explanation": "Λάθος. Η σειριακή αναζήτηση ελέγχει τα στοιχεία με τη σειρά και μπορεί να εφαρμοστεί και σε μη ταξινομημένο πίνακα. Η ταξινόμηση είναι προϋπόθεση της δυαδικής αναζήτησης. (Σχολικό βιβλίο, §3.6.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 3 · §3.6",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index3_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να αποθηκεύεται η θέση της μοναδικής τιμής 3 στον πίνακα Α[4] = [4, 5, 3, 6].",
+        "codeSnippet": "Θ <- 0\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ 4\n  ΑΝ Α[Ι] [BLANK] 3 ΤΟΤΕ\n    Θ <- Ι\n  ΤΕΛΟΣ_ΑΝ\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Θ",
+        "declarations": "Ακέραιες Θ, Ι, Α[4]. Αρχικοποίηση πριν από το τμήμα: Α[1] <- 4 · Α[2] <- 5 · Α[3] <- 3 · Α[4] <- 6.",
+        "correctAnswer": "=",
+        "options": [
+          "=",
+          "<>",
+          ">"
+        ],
+        "explanation": "Η ισότητα εντοπίζει τη μοναδική ζητούμενη τιμή στην τρίτη θέση. Η εκχώρηση Θ <- Ι αποθηκεύει τη θέση 3. Η αρχική τιμή Θ = 0 είναι ένδειξη μη εύρεσης και δεν χρησιμοποιείται ως δείκτης πίνακα. (Σχολικό βιβλίο, §3.6.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 3 · §3.6",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index3_1.html",
+          "lessonId": null
+        },
+        "tags": [
+          "loops",
+          "search"
+        ],
+        "verification": {
+          "initialization": "Α[1] <- 4\nΑ[2] <- 5\nΑ[3] <- 3\nΑ[4] <- 6",
+          "expectedOutput": "3"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Θ <- 0\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ 4\n  ΑΝ Α[Ι] = 4 ΤΟΤΕ\n    Θ <- Ι\n  ΤΕΛΟΣ_ΑΝ\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Θ",
+        "declarations": "Ακέραιες Θ, Ι, Α[4]. Αρχικοποίηση πριν από το τμήμα: Α[1] <- 5 · Α[2] <- 6 · Α[3] <- 4 · Α[4] <- 7.",
+        "correctAnswer": "3",
+        "explanation": "Ο έλεγχος ισότητας επιτυγχάνει μόνο για Ι = 3, όπου Α[3] = 4. Αποθηκεύεται ο δείκτης 3 και όχι η τιμή 4. Η τέταρτη επανάληψη δεν αλλάζει το Θ. (Σχολικό βιβλίο, §3.6.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 3 · §3.6",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index3_1.html",
+          "lessonId": null
+        },
+        "tags": [
+          "loops",
+          "search"
+        ],
+        "verification": {
+          "initialization": "Α[1] <- 5\nΑ[2] <- 6\nΑ[3] <- 4\nΑ[4] <- 7",
+          "expectedOutput": "3"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-14",
+    "dayIndex": 14,
+    "topic": "Ελάχιστο και αρχικοποίηση",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Για εύρεση μεγίστου σε πίνακα μόνο αρνητικών αριθμών, η αρχικοποίηση του μεγίστου στο 0 δίνει πάντα σωστό αποτέλεσμα.",
+        "correctAnswer": false,
+        "explanation": "Λάθος. Κανένα αρνητικό στοιχείο δεν είναι μεγαλύτερο από το 0, άρα θα έμενε μια τιμή που δεν ανήκει στα δεδομένα. Με τουλάχιστον ένα στοιχείο, ασφαλής αρχικοποίηση είναι η τιμή του πρώτου στοιχείου. (Σχολικό βιβλίο, §9.4.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 9 · §9.4",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index9_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να βρίσκεται η ελάχιστη τιμή του Α[3] = [-3, -7, -4].",
+        "codeSnippet": "Μ <- Α[1]\nΓΙΑ Ι ΑΠΟ 2 ΜΕΧΡΙ 3\n  ΑΝ Α[Ι] [BLANK] Μ ΤΟΤΕ\n    Μ <- Α[Ι]\n  ΤΕΛΟΣ_ΑΝ\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Μ",
+        "declarations": "Ακέραιες Μ, Ι, Α[3]. Αρχικοποίηση πριν από το τμήμα: Α[1] <- -3 · Α[2] <- -7 · Α[3] <- -4.",
+        "correctAnswer": "<",
+        "options": [
+          ">",
+          "<",
+          "="
+        ],
+        "explanation": "Ο Μ ξεκινά από -3. Το -7 < -3 προκαλεί ενημέρωση σε -7, ενώ το -4 < -7 είναι ψευδές. Έτσι εμφανίζεται -7. Ο τελεστής > θα αναζητούσε μέγιστο. (Σχολικό βιβλίο, §9.4.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 9 · §9.4",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index9_1.html",
+          "lessonId": null
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "Α[1] <- -3\nΑ[2] <- -7\nΑ[3] <- -4",
+          "expectedOutput": "-7"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Μ <- Α[1]\nΓΙΑ Ι ΑΠΟ 2 ΜΕΧΡΙ 3\n  ΑΝ Α[Ι] < Μ ΤΟΤΕ\n    Μ <- Α[Ι]\n  ΤΕΛΟΣ_ΑΝ\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Μ",
+        "declarations": "Ακέραιες Μ, Ι, Α[3]. Αρχικοποίηση πριν από το τμήμα: Α[1] <- -4 · Α[2] <- -8 · Α[3] <- -5.",
+        "correctAnswer": "-8",
+        "explanation": "Ο Μ αρχικοποιείται στο -4. Για Ι = 2 γίνεται -8. Για Ι = 3, το -5 δεν είναι μικρότερο από -8, οπότε ο Μ μένει -8 και αυτή είναι η έξοδος. (Σχολικό βιβλίο, §9.4.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 9 · §9.4",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index9_1.html",
+          "lessonId": null
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "Α[1] <- -4\nΑ[2] <- -8\nΑ[3] <- -5",
+          "expectedOutput": "-8"
+        }
+      }
+    ]
+  },
+  {
+    "id": "challenge-day-15",
+    "dayIndex": 15,
+    "topic": "Κύρια διαγώνιος και συνάρτηση",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "TRUE_FALSE",
+        "questionText": "Μια συνάρτηση στη ΓΛΩΣΣΑ επιστρέφει την τιμή της με εκχώρηση στο όνομά της.",
+        "correctAnswer": true,
+        "explanation": "Σωστό. Το όνομα της συνάρτησης δέχεται την τιμή που επιστρέφεται στην έκφραση όπου έγινε η κλήση. Η τιμή πρέπει να είναι συμβατή με τον δηλωμένο τύπο επιστροφής. Η ΚΑΛΕΣΕ χρησιμοποιείται για διαδικασίες. (Σχολικό βιβλίο, §10.5.1.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 10 · §10.5.1",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index10_1.html",
+          "lessonId": null
+        }
+      },
+      {
+        "id": "q2",
+        "type": "FILL_BLANK",
+        "questionText": "Δίνεται τμήμα προγράμματος. Συμπλήρωσε το κενό. Να αθροίζονται τα στοιχεία κύριας διαγωνίου του Α[2,2] = [[3, 13], [23, 4]].",
+        "codeSnippet": "Σ <- 0\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ 2\n  Σ <- Σ + Α[Ι, [BLANK]]\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Σ, Ι, Α[2,2]. Αρχικοποίηση πριν από το τμήμα: Α[1,1] <- 3 · Α[1,2] <- 13 · Α[2,1] <- 23 · Α[2,2] <- 4.",
+        "correctAnswer": "Ι",
+        "options": [
+          "1",
+          "2",
+          "Ι"
+        ],
+        "explanation": "Στην κύρια διαγώνιο οι δείκτες γραμμής και στήλης είναι ίδιοι. Η επιλογή Ι διαβάζει Α[1,1] και Α[2,2], δηλαδή 3 και 4, με άθροισμα 7. Η σταθερή στήλη 1 ή 2 θα άθροιζε διαφορετικά στοιχεία. (Σχολικό βιβλίο, §9.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 9 · §9.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index9_1.html",
+          "lessonId": null
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "Α[1,1] <- 3\nΑ[1,2] <- 13\nΑ[2,1] <- 23\nΑ[2,2] <- 4",
+          "expectedOutput": "7"
+        }
+      },
+      {
+        "id": "q3",
+        "type": "TRACE_OUTPUT",
+        "questionText": "Δίνεται τμήμα προγράμματος. Ποια μοναδική τιμή εμφανίζεται από το παρακάτω τμήμα;",
+        "codeSnippet": "Σ <- 0\nΓΙΑ Ι ΑΠΟ 1 ΜΕΧΡΙ 2\n  Σ <- Σ + Α[Ι, Ι]\nΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΓΡΑΨΕ Σ",
+        "declarations": "Ακέραιες Σ, Ι, Α[2,2]. Αρχικοποίηση πριν από το τμήμα: Α[1,1] <- 4 · Α[1,2] <- 14 · Α[2,1] <- 24 · Α[2,2] <- 5.",
+        "correctAnswer": "9",
+        "explanation": "Για Ι = 1 προστίθεται το Α[1,1] = 4 και για Ι = 2 το Α[2,2] = 5. Τα εκτός διαγωνίου στοιχεία 14 και 24 δεν προστίθενται. Η έξοδος είναι 9. (Σχολικό βιβλίο, §9.3.)",
+        "reference": {
+          "label": "ΑΕΠΠ · Κεφάλαιο 9 · §9.3",
+          "url": "https://www.ebooks.edu.gr/ebooks/v/html/8547/2718/Pliroforiki_G-Lykeiou_html-empl/index9_1.html",
+          "lessonId": null
+        },
+        "tags": [
+          "loops"
+        ],
+        "verification": {
+          "initialization": "Α[1,1] <- 4\nΑ[1,2] <- 14\nΑ[2,1] <- 24\nΑ[2,2] <- 5",
+          "expectedOutput": "9"
+        }
+      }
+    ]
+  }
+]

@@ -1,13 +1,4 @@
-import {
-  ArrowRight,
-  BookOpen,
-  Braces,
-  Flame,
-  Play,
-  Rocket,
-  Sparkles,
-  Workflow,
-} from 'lucide-react'
+import { ArrowRight, BookOpen, Braces, Flame, Play, Rocket, Sparkles, Workflow } from 'lucide-react'
 import './home-showcase.css'
 
 const codeLines = [
@@ -60,7 +51,11 @@ function IdeMockup() {
             {codeLines.map(([keyword, remainder], index) => (
               <div key={`${keyword}-${index}`} className="flex min-w-max gap-3">
                 <span className="w-4 shrink-0 select-none text-right text-slate-600">{index + 1}</span>
-                <span className={index === 6 ? 'text-amber-200' : index === 4 || index === 7 ? 'text-emerald-300' : 'text-blue-200'}>
+                <span
+                  className={
+                    index === 6 ? 'text-amber-200' : index === 4 || index === 7 ? 'text-emerald-300' : 'text-blue-200'
+                  }
+                >
                   {keyword}
                 </span>
                 {remainder && <span className="text-slate-200">{remainder}</span>}
@@ -75,25 +70,39 @@ function IdeMockup() {
 
         <div className="flex min-w-0 flex-col items-center justify-center gap-2 bg-slate-50/80 p-4 sm:p-6">
           <div className="mb-1 flex w-full items-center justify-between text-[10px] font-semibold text-slate-500">
-            <span className="inline-flex items-center gap-1.5"><Workflow size={13} className="text-violet-600" aria-hidden="true" />Διάγραμμα Ροής</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Workflow size={13} className="text-violet-600" aria-hidden="true" />
+              Διάγραμμα Ροής
+            </span>
             <span>Ζωντανή προεπισκόπηση</span>
           </div>
-          <span className="rounded-full border border-blue-200 bg-white px-7 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm">ΑΡΧΗ</span>
+          <span className="rounded-full border border-blue-200 bg-white px-7 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm">
+            ΑΡΧΗ
+          </span>
           <span className="h-3 w-px bg-blue-300" aria-hidden="true" />
-          <span className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-2 text-center text-[10px] font-semibold text-violet-800 shadow-sm">max &lt;- A[1]</span>
+          <span className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-2 text-center text-[10px] font-semibold text-violet-800 shadow-sm">
+            max &lt;- A[1]
+          </span>
           <span className="h-3 w-px bg-blue-300" aria-hidden="true" />
           <span className="flex size-16 rotate-45 items-center justify-center border border-amber-300 bg-amber-50 shadow-sm sm:size-[4.5rem]">
             <span className="-rotate-45 text-[9px] font-semibold text-amber-900">i &lt;= 5;</span>
           </span>
           <span className="h-3 w-px bg-blue-300" aria-hidden="true" />
-          <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-center text-[10px] font-semibold text-emerald-800 shadow-sm">max &lt;- A[i]</span>
-          <span className="rounded-full border border-blue-200 bg-white px-7 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm">ΤΕΛΟΣ</span>
+          <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-center text-[10px] font-semibold text-emerald-800 shadow-sm">
+            max &lt;- A[i]
+          </span>
+          <span className="rounded-full border border-blue-200 bg-white px-7 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm">
+            ΤΕΛΟΣ
+          </span>
         </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-2.5 text-[10px] text-slate-500 sm:px-5">
         <span>Ενδεικτική προεπισκόπηση</span>
-        <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700"><span className="size-1.5 rounded-full bg-emerald-500" />ΓΛΩΣΣΑ</span>
+        <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
+          <span className="size-1.5 rounded-full bg-emerald-500" />
+          ΓΛΩΣΣΑ
+        </span>
       </div>
     </div>
   )
@@ -120,31 +129,62 @@ function AnalyticsMockup() {
             <span className="text-[9px] font-semibold text-orange-800">ΣΕΡΙ ΗΜΕΡΩΝ</span>
             <Flame size={15} className="text-orange-500" aria-hidden="true" />
           </div>
-          <p className="mt-1 text-xl font-extrabold leading-none text-orange-950">12 <span className="text-xs font-semibold">ημέρες</span></p>
+          <p className="mt-1 text-xl font-extrabold leading-none text-orange-950">
+            12 <span className="text-xs font-semibold">ημέρες</span>
+          </p>
         </div>
         <div className="rounded-xl bg-violet-50 p-3">
           <p className="text-[9px] font-semibold text-violet-800">ΣΥΝΟΛΙΚΑ XP</p>
-          <p className="mt-1 text-xl font-extrabold leading-none text-violet-950">2.480 <span className="text-xs font-semibold">XP</span></p>
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-violet-200"><div className="h-full w-2/3 rounded-full bg-violet-500" /></div>
+          <p className="mt-1 text-xl font-extrabold leading-none text-violet-950">
+            2.480 <span className="text-xs font-semibold">XP</span>
+          </p>
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-violet-200">
+            <div className="h-full w-2/3 rounded-full bg-violet-500" />
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-[0.82fr_1.18fr] gap-2.5 px-3.5 pb-3.5">
         <div className="rounded-xl border border-slate-100 p-3">
-          <p className="mb-2 inline-flex items-center gap-1.5 text-[9px] font-bold text-slate-600"><BookOpen size={12} className="text-blue-600" aria-hidden="true" />Σημειώσεις</p>
+          <p className="mb-2 inline-flex items-center gap-1.5 text-[9px] font-bold text-slate-600">
+            <BookOpen size={12} className="text-blue-600" aria-hidden="true" />
+            Σημειώσεις
+          </p>
           <div className="space-y-1.5">
-            <p className="truncate rounded-md bg-blue-50 px-2 py-1.5 text-[9px] font-medium text-blue-900">Ταξινόμηση φυσαλίδας</p>
-            <p className="truncate rounded-md bg-slate-50 px-2 py-1.5 text-[9px] font-medium text-slate-600">Πίνακες τιμών</p>
+            <p className="truncate rounded-md bg-blue-50 px-2 py-1.5 text-[9px] font-medium text-blue-900">
+              Ταξινόμηση φυσαλίδας
+            </p>
+            <p className="truncate rounded-md bg-slate-50 px-2 py-1.5 text-[9px] font-medium text-slate-600">
+              Πίνακες τιμών
+            </p>
           </div>
         </div>
         <div className="overflow-hidden rounded-xl border border-slate-100">
           <p className="border-b border-slate-100 px-2.5 py-2 text-[9px] font-bold text-slate-600">ΠΙΝΑΚΑΣ ΤΙΜΩΝ</p>
           <table className="w-full text-left text-[9px]">
-            <thead className="bg-slate-50 text-slate-500"><tr><th className="px-2 py-1 font-semibold">i</th><th className="px-2 py-1 font-semibold">A[i]</th><th className="px-2 py-1 font-semibold">max</th></tr></thead>
+            <thead className="bg-slate-50 text-slate-500">
+              <tr>
+                <th className="px-2 py-1 font-semibold">i</th>
+                <th className="px-2 py-1 font-semibold">A[i]</th>
+                <th className="px-2 py-1 font-semibold">max</th>
+              </tr>
+            </thead>
             <tbody className="text-slate-700">
-              <tr><td className="px-2 py-1">1</td><td className="px-2 py-1">12</td><td className="px-2 py-1">12</td></tr>
-              <tr className="bg-blue-50 font-semibold text-blue-800"><td className="px-2 py-1">2</td><td className="px-2 py-1">18</td><td className="px-2 py-1">18</td></tr>
-              <tr><td className="px-2 py-1">3</td><td className="px-2 py-1">7</td><td className="px-2 py-1">18</td></tr>
+              <tr>
+                <td className="px-2 py-1">1</td>
+                <td className="px-2 py-1">12</td>
+                <td className="px-2 py-1">12</td>
+              </tr>
+              <tr className="bg-blue-50 font-semibold text-blue-800">
+                <td className="px-2 py-1">2</td>
+                <td className="px-2 py-1">18</td>
+                <td className="px-2 py-1">18</td>
+              </tr>
+              <tr>
+                <td className="px-2 py-1">3</td>
+                <td className="px-2 py-1">7</td>
+                <td className="px-2 py-1">18</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -153,16 +193,17 @@ function AnalyticsMockup() {
   )
 }
 
-export default function HeroScrollShowcase({ onStartNow, onOpenGuide }: {
+export default function HeroScrollShowcase({
+  onStartNow,
+  onOpenGuide,
+}: {
   onStartNow: () => void
   onOpenGuide: () => void
 }) {
   return (
     <section className="home-showcase">
       <div className="mx-auto max-w-5xl text-center">
-        <h1 className="home-showcase-title">
-          Το Πλήρες Ψηφιακό Εργαστήριο για την Πληροφορική Γ&apos; Λυκείου
-        </h1>
+        <h1 className="home-showcase-title">Το Πλήρες Ψηφιακό Εργαστήριο για την Πληροφορική Γ&apos; Λυκείου</h1>
         <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
           Γράψε κώδικα, δες τη ροή εκτέλεσης σε real-time και κατάκτησε τις Πανελλαδικές.
         </p>
@@ -188,15 +229,17 @@ export default function HeroScrollShowcase({ onStartNow, onOpenGuide }: {
       </div>
 
       <div className="home-preview-grid mx-auto w-full max-w-6xl">
-          <div className="min-w-0">
-            <IdeMockup />
-          </div>
-          <div className="home-progress min-w-0">
-            <AnalyticsMockup />
-          </div>
+        <div className="min-w-0">
+          <IdeMockup />
+        </div>
+        <div className="home-progress min-w-0">
+          <AnalyticsMockup />
+        </div>
       </div>
       <p className="mx-auto mt-3 flex max-w-max items-center gap-2 text-center text-xs font-medium text-slate-500">
-        <span className="inline-flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Play size={10} fill="currentColor" aria-hidden="true" /></span>
+        <span className="inline-flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+          <Play size={10} fill="currentColor" aria-hidden="true" />
+        </span>
         Από τον κώδικα στην οπτικοποίηση — σε ένα ενιαίο περιβάλλον
       </p>
     </section>

@@ -1,40 +1,106 @@
-export interface Point { x: number; y: number }
+export interface Point {
+  x: number
+  y: number
+}
 export type ShapeKind = 'start' | 'io' | 'process' | 'subprogram' | 'decision' | 'connector' | 'note'
 export type DrawTool = ShapeKind | 'line' | 'arrow' | 'pencil' | 'highlighter' | 'table'
 export type Tool = DrawTool | 'select' | 'hand' | 'eraser'
 
-interface BaseItem { id: string; x: number; y: number; width: number; height: number; rotation: number }
-export interface ShapeItem extends BaseItem { type: 'shape'; kind: ShapeKind; text: string; nodeId?: string; executionPhase?: import('../interpreter/types').NodeExecutionEvent['phase'] }
-export interface LineItem extends BaseItem { type: 'line'; arrow: boolean }
-export interface StrokeItem extends BaseItem { type: 'stroke'; points: Point[]; highlight: boolean }
-export interface ImageItem extends BaseItem { type: 'image'; src: string; alt: string }
-export interface TableItem extends BaseItem { type: 'table'; columns: string[]; rows: string[][] }
+interface BaseItem {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number
+}
+export interface ShapeItem extends BaseItem {
+  type: 'shape'
+  kind: ShapeKind
+  text: string
+  nodeId?: string
+  executionPhase?: import('../interpreter/types').NodeExecutionEvent['phase']
+}
+export interface LineItem extends BaseItem {
+  type: 'line'
+  arrow: boolean
+}
+export interface StrokeItem extends BaseItem {
+  type: 'stroke'
+  points: Point[]
+  highlight: boolean
+}
+export interface ImageItem extends BaseItem {
+  type: 'image'
+  src: string
+  alt: string
+}
+export interface TableItem extends BaseItem {
+  type: 'table'
+  columns: string[]
+  rows: string[][]
+}
 export type BoardItem = ShapeItem | LineItem | StrokeItem | ImageItem | TableItem
 export type PortSide = 'top' | 'right' | 'bottom' | 'left'
-export interface LinkRoute { from: PortSide; to: PortSide; via?: Point[] }
-export interface FlowLink { id: string; from: string; to: string; label: string; route?: LinkRoute }
-export interface BoardDocument { version: 1; executionSource?: string; items: BoardItem[]; links: FlowLink[] }
+export interface LinkRoute {
+  from: PortSide
+  to: PortSide
+  via?: Point[]
+}
+export interface FlowLink {
+  id: string
+  from: string
+  to: string
+  label: string
+  route?: LinkRoute
+}
+export interface BoardDocument {
+  version: 1
+  executionSource?: string
+  items: BoardItem[]
+  links: FlowLink[]
+}
 
 export const emptyBoard = (): BoardDocument => ({ version: 1, items: [], links: [] })
 export const newId = () => crypto.randomUUID()
 export const isConnectable = (item: BoardItem): item is ShapeItem => item.type === 'shape' && item.kind !== 'note'
 export const tableCellWidth = 152
 export const tableCellHeight = 42
-export const tableDimensions = (columns: string[], rows: string[][]) => ({ width: (columns.length + 1) * tableCellWidth, height: (rows.length + 1) * tableCellHeight })
+export const tableDimensions = (columns: string[], rows: string[][]) => ({
+  width: (columns.length + 1) * tableCellWidth,
+  height: (rows.length + 1) * tableCellHeight,
+})
 
 export function ensureOutputColumn(table: TableItem): TableItem {
-  const outputIndexes = table.columns.flatMap((name, index) => name.trim().toLocaleUpperCase('el-GR') === 'ΕΞΟΔΟΣ' ? [index] : [])
+  const outputIndexes = table.columns.flatMap((name, index) =>
+    name.trim().toLocaleUpperCase('el-GR') === 'ΕΞΟΔΟΣ' ? [index] : [],
+  )
   const otherIndexes = table.columns.map((_, index) => index).filter(index => !outputIndexes.includes(index))
   const columns = [...otherIndexes.map(index => table.columns[index]), 'ΕΞΟΔΟΣ']
-  const rows = table.rows.map(row => [...otherIndexes.map(index => row[index] ?? ''), outputIndexes.length ? row[outputIndexes[0]] ?? '' : ''])
+  const rows = table.rows.map(row => [
+    ...otherIndexes.map(index => row[index] ?? ''),
+    outputIndexes.length ? (row[outputIndexes[0]] ?? '') : '',
+  ])
   return { ...table, columns, rows, ...tableDimensions(columns, rows) }
 }
 
 export function itemBounds(item: BoardItem) {
-  if (item.type === 'line') return { x: Math.min(item.x, item.x + item.width), y: Math.min(item.y, item.y + item.height), width: Math.abs(item.width), height: Math.abs(item.height) }
+  if (item.type === 'line')
+    return {
+      x: Math.min(item.x, item.x + item.width),
+      y: Math.min(item.y, item.y + item.height),
+      width: Math.abs(item.width),
+      height: Math.abs(item.height),
+    }
   if (item.type === 'stroke') {
-    const xs = item.points.map(point => point.x), ys = item.points.map(point => point.y)
-    return { x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) }
+    const xs = item.points.map(point => point.x),
+      ys = item.points.map(point => point.y)
+    return {
+      x: Math.min(...xs),
+      y: Math.min(...ys),
+      width: Math.max(...xs) - Math.min(...xs),
+      height: Math.max(...ys) - Math.min(...ys),
+    }
   }
   return { x: item.x, y: item.y, width: item.width, height: item.height }
 }
@@ -51,17 +117,26 @@ export function boardBounds(board: BoardDocument) {
 }
 
 export function moveItem(item: BoardItem, dx: number, dy: number): BoardItem {
-  if (item.type === 'stroke') return { ...item, x: item.x + dx, y: item.y + dy, points: item.points.map(point => ({ x: point.x + dx, y: point.y + dy })) }
+  if (item.type === 'stroke')
+    return {
+      ...item,
+      x: item.x + dx,
+      y: item.y + dy,
+      points: item.points.map(point => ({ x: point.x + dx, y: point.y + dy })),
+    }
   return { ...item, x: item.x + dx, y: item.y + dy }
 }
 
 export function loadBoard(): BoardDocument {
   try {
     const saved = JSON.parse(localStorage.getItem('aepp-whiteboard-v1') ?? 'null') as BoardDocument | null
-    if (saved?.version === 1 && Array.isArray(saved.items) && Array.isArray(saved.links)) return {
-      ...saved,
-      items: saved.items.map(item => item.type === 'table' ? ensureOutputColumn(item) : item),
-    }
-  } catch { /* Άκυρα τοπικά δεδομένα: ξεκινά κενός πίνακας. */ }
+    if (saved?.version === 1 && Array.isArray(saved.items) && Array.isArray(saved.links))
+      return {
+        ...saved,
+        items: saved.items.map(item => (item.type === 'table' ? ensureOutputColumn(item) : item)),
+      }
+  } catch {
+    /* Άκυρα τοπικά δεδομένα: ξεκινά κενός πίνακας. */
+  }
   return emptyBoard()
 }

@@ -37,6 +37,8 @@ public sealed class ServerProgramGrader(IConfiguration configuration)
                 .ToDictionary(question => question!["questionId"]!.GetValue<string>(), question => question!, StringComparer.Ordinal);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw new GradingUnavailableException(); }
+        catch (System.Text.Json.JsonException) { throw new GradingUnavailableException(); }
+        catch (IOException) { throw new GradingUnavailableException(); }
         catch (System.ComponentModel.Win32Exception) { throw new GradingUnavailableException(); }
         finally
         {

@@ -1,4 +1,11 @@
-export function followLineScroll(line: number, lineHeight: number, paddingTop: number, viewportHeight: number, scrollTop: number, scrollHeight: number): number {
+export function followLineScroll(
+  line: number,
+  lineHeight: number,
+  paddingTop: number,
+  viewportHeight: number,
+  scrollTop: number,
+  scrollHeight: number,
+): number {
   if (!Number.isInteger(line) || line < 1 || lineHeight <= 0 || viewportHeight <= 0) return scrollTop
   const top = paddingTop + (line - 1) * lineHeight
   const bottom = top + lineHeight

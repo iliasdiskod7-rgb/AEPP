@@ -10,8 +10,8 @@ void Check(bool condition,string label){if(!condition)throw new Exception(label)
 async Task Reject(Func<Task<object>> call,string label){try{await call();throw new Exception("Expected rejection: "+label);}catch(ArgumentException){Check(true,label);}}
 using var stream=typeof(GamificationService).Assembly.GetManifestResourceStream("AeppGenerator.DailyChallengeBank")!;
 var packs=JsonNode.Parse(stream)!["packs"]!.AsArray();
-Check(packs.Count==100,"embedded bank contains 100 packs");
-JsonNode Pack(string day){var n=(int)(DateTime.Parse(day)-DateTime.UnixEpoch).TotalDays;var start=(int)(DateTime.Parse("2026-10-15")-DateTime.UnixEpoch).TotalDays;return packs[n<start?((n%21)+21)%21:(21+n-start)%packs.Count]!;}
+Check(packs.Count==115,"embedded bank contains 115 packs");
+JsonNode Pack(string day){var n=(int)(DateTime.Parse(day)-DateTime.UnixEpoch).TotalDays;var start=(int)(DateTime.Parse("2026-10-15")-DateTime.UnixEpoch).TotalDays;var expanded=(int)(DateTime.Parse("2026-10-16")-DateTime.UnixEpoch).TotalDays;if(n>=expanded)return packs[(100+n-expanded)%packs.Count]!;return packs[n<start?((n%21)+21)%21:(21+n-start)%100]!;}
 Dictionary<string,string> Answers(string day)=>Pack(day)["questions"]!.AsArray().SelectMany(q=>q!["kind"]!.GetValue<string>()=="fill"?q["blanks"]!.AsArray().Select(b=>KeyValuePair.Create(q["id"]!.GetValue<string>()+":"+b!["id"]!.GetValue<string>(),b["accepted"]![0]!.GetValue<string>())):[KeyValuePair.Create(q["id"]!.GetValue<string>(),q["answer"]!.GetValue<string>())]).ToDictionary();
 async Task<JsonNode> Finish(string identity,string day){clock.Time=DateTimeOffset.Parse(day+"T10:00:00Z");await service.Start(identity);await service.Theory(identity,day,Pack(day)["questions"]![0]!["answer"]!.GetValue<string>());clock.Time=clock.Time.AddSeconds(120);return Node(await service.Complete(identity,day,Answers(day)));}
 var initial=Node(await service.Get(id));Check(initial["day"]!.GetValue<string>()=="2026-10-08","Athens day");Check(!initial["questions"]!.ToJsonString().Contains("accepted"),"public DTO strips solutions");
@@ -25,16 +25,23 @@ clock.Time=DateTimeOffset.Parse("2026-10-07T20:59:59Z");Check(service.Day=="2026
 clock.Time=DateTimeOffset.Parse("2026-10-08T10:00:00Z");await service.Update(id,"Άλφα","🦉","A",[]);await service.Update(freezeId,"Βήτα","🐢","A",[]);await service.Update(slow,"Γάμμα","🦊","B",[]);Check((await service.Leaderboard(id,"all","group")).Count==2,"group filter");var friendCode=Node(await service.Get(slow))["profile"]!["publicCode"]!.GetValue<string>();await service.Update(id,"Άλφα","🦉","A",[friendCode]);Check((await service.Leaderboard(id,"all","friends")).Count==2,"friend filter");Check((await service.Leaderboard(id,"all","national")).Count==4,"real profiles only");await Reject(()=>service.Update(id,"Άλφα","🦉","A",["invalid"]),"unknown friend rejected");
 var rankJson=JsonSerializer.Serialize(await service.Leaderboard(id,"weekly","national"),options);Check(!rankJson.Contains("publicCode")&&!rankJson.Contains("answers"),"leaderboard excludes private data");
 var rotationIds=new HashSet<string>();
-for(var i=0;i<100;i++){
- var day=DateOnly.Parse("2026-10-15").AddDays(i).ToString("yyyy-MM-dd");
+for(var i=0;i<packs.Count;i++){
+ var day=DateOnly.Parse("2026-10-16").AddDays(i).ToString("yyyy-MM-dd");
  clock.Time=DateTimeOffset.Parse(day+"T10:00:00Z");
  var state=Node(await service.Get(id));
  var questionId=state["questions"]![0]!["id"]!.GetValue<string>();
  if(questionId!=Pack(day)["questions"]![0]!["id"]!.GetValue<string>())throw new Exception("Rotation mismatch on "+day);
  rotationIds.Add(questionId);
 }
-Check(rotationIds.Count==100,"backend rotates through all 100 distinct packs after cutover");
-var newSearch=await Finish(Guid.NewGuid().ToString(),"2026-10-27");
+Check(rotationIds.Count==packs.Count,"backend rotates through all 115 distinct packs after cutover");
+var newSearch=await Finish(Guid.NewGuid().ToString(),"2026-12-03");
 Check(newSearch["profile"]!["badges"]!.AsArray().Any(b=>b!.GetValue<string>()=="arrays"),"new search variant awards array badge");
+var today=Node(service.Today());
+Check(today["questions"]!.AsArray().Count==3,"today DTO contains three questions");
+var publicJson=today.ToJsonString();
+Check(!publicJson.Contains("correctAnswer")&&!publicJson.Contains("accepted")&&!publicJson.Contains("explanation")&&!publicJson.Contains("expected"),"today DTO never exposes solutions");
+var directId=Guid.NewGuid().ToString();await service.Start(directId);
+var submitted=Node(await service.Complete(directId,service.Day,Answers(service.Day)));
+Check(submitted["completion"]!["correctCount"]!.GetValue<int>()==3,"single submit grades theory without separate theory request");
 Console.WriteLine($"{checks} gamification checks passed. Store: {path}");
 sealed class TestClock:TimeProvider{public DateTimeOffset Time{get;set;}public override DateTimeOffset GetUtcNow()=>Time;}

@@ -14,5 +14,7 @@ export class DebugInputBuffer {
   consume() {
     if (this.cursor < this.values.length) this.cursor++
   }
-  seek(index:number){this.cursor=Math.max(0,Math.min(this.values.length,Math.trunc(index)))}
+  seek(index: number) {
+    this.cursor = Math.max(0, Math.min(this.values.length, Math.trunc(index)))
+  }
 }

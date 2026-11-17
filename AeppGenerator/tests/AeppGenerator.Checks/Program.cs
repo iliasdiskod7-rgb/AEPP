@@ -72,6 +72,20 @@ if (args.Contains("--live") || args.Contains("--live-node"))
     return;
 }
 
+foreach (var (code, accepted) in new[] { ("Β2α", true), ("Β2β", true), ("Α2α", false), ("Β0α", false), ("Β2a", false), ("Β2αβ", false) })
+{
+    var codeFixture = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(fixture))!;
+    codeFixture["sections"]![1]!["questions"]![0]!["code"] = code;
+    var codeResponse = JsonSerializer.Serialize(new
+    {
+        candidates = new[] { new { finishReason = "STOP", content = new { parts = new[] { new { text = codeFixture.ToJsonString() } } } } }
+    });
+    using var codeHttp = Client(new Stub((_, _) => Task.FromResult(Reply(200, codeResponse))));
+    var codeResult = await Controller(codeHttp, settings).Generate(request, default);
+    Check(accepted ? codeResult.Result is OkObjectResult : codeResult.Result is ObjectResult { StatusCode: 502 },
+        $"question code {code}: {(accepted ? "accepted" : "rejected")}");
+}
+
 var waits = new List<TimeSpan>();
 var retry = new LlmRetryHandler((wait, token) => { token.ThrowIfCancellationRequested(); waits.Add(wait); return Task.CompletedTask; });
 var retryCalls = 0;

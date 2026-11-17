@@ -5,10 +5,11 @@ import type { AssessmentExam, AssessmentQuestion } from './model'
 
 /** Οι δοκιμές προτύπων διατηρούνται, αλλά η συνολική βαθμολόγηση απαιτεί έλεγχο καθηγητή. */
 export function generatedToAssessment(input: ExamJsonResponseDto): AssessmentExam {
-  const source = parseBoundary(GeneratedExamSchema,input)
+  const source = parseBoundary(GeneratedExamSchema, input)
   const content = JSON.stringify(source.sections)
   let signature = 2166136261
-  for (let index = 0; index < content.length; index++) signature = Math.imul(signature ^ content.charCodeAt(index), 16777619)
+  for (let index = 0; index < content.length; index++)
+    signature = Math.imul(signature ^ content.charCodeAt(index), 16777619)
   return {
     id: `generated-${(signature >>> 0).toString(36)}`,
     title: source.title,
@@ -19,13 +20,27 @@ export function generatedToAssessment(input: ExamJsonResponseDto): AssessmentExa
       marks: section.totalMarks,
       questions: section.questions.map((question): AssessmentQuestion => {
         const base = {
-          id: `${section.theme}-${question.code}`, code: question.code, title: question.code,
-          prompt: question.questionText + (question.glowCodeSnippet ? `\n\n\`\`\`glossa\n${question.glowCodeSnippet}\n\`\`\`` : ''),
-          marks: question.marks, chapter: 'Ύλη διαγωνίσματος', solution: question.solutionText,
+          id: `${section.theme}-${question.code}`,
+          code: question.code,
+          title: question.code,
+          prompt:
+            question.questionText +
+            (question.glowCodeSnippet ? `\n\n\`\`\`glossa\n${question.glowCodeSnippet}\n\`\`\`` : ''),
+          marks: question.marks,
+          chapter: 'Ύλη διαγωνίσματος',
+          solution: question.solutionText,
         }
         if (section.theme === 'Θέμα Γ' || section.theme === 'Θέμα Δ') {
-          const referenceCode = /```(?:glossa|ΓΛΩΣΣΑ)\s*\n([\s\S]*?)```/iu.exec(question.solutionText)?.[1]?.trim() ?? ''
-          return { ...base, kind: 'program', gradingMode: 'review', referenceCode, testCases: question.testCases ?? [], rubric: [] }
+          const referenceCode =
+            /```(?:glossa|ΓΛΩΣΣΑ)\s*\n([\s\S]*?)```/iu.exec(question.solutionText)?.[1]?.trim() ?? ''
+          return {
+            ...base,
+            kind: 'program',
+            gradingMode: 'review',
+            referenceCode,
+            testCases: question.testCases ?? [],
+            rubric: [],
+          }
         }
         return { ...base, kind: 'open' }
       }),

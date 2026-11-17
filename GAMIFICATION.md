@@ -6,7 +6,7 @@
 
 - aepp-generator-client/src/gamification/types.ts: συμβόλαια προφίλ, προσπάθειας, ολοκλήρωσης, feedback και κατάταξης.
 - aepp-generator-client/src/gamification/engine.ts: τοπικός μηχανισμός για το demo.
-- aepp-generator-client/src/gamification/challenge-bank.json: κοινή τράπεζα 100 ημερήσιων συνόλων (300 ερωτήσεις), ενσωματωμένη και στο backend. Τα αρχικά 21 πακέτα διατηρούνται. Από 15/10/2026 ξεκινά κύκλος 100 ημερών από το πρώτο νέο πακέτο. Οι προηγούμενες ημερομηνίες κρατούν την παλιά αντιστοίχιση, ώστε να μη μεταβάλλονται οι υπάρχουσες προσπάθειες και αναφορές.
+- aepp-generator-client/src/gamification/challenge-bank.json: κοινή τράπεζα 115 ημερήσιων συνόλων (345 ερωτήσεις), ενσωματωμένη και στο backend. Τα αρχικά 21 πακέτα διατηρούνται. Στις 15/10/2026 χρησιμοποιείται το πρώτο από τα 79 νέα πακέτα. Από 16/10/2026 αρχίζει ο κύκλος 115 ημερών με τα 15 επιμελημένα σετ πρώτα. Οι προηγούμενες ημερομηνίες κρατούν την παλιά αντιστοίχιση, ώστε να μη μεταβάλλονται οι υπάρχουσες προσπάθειες και αναφορές.
 - aepp-generator-client/scripts/expand-daily-bank.mjs: επιμελημένες νέες προτάσεις θεωρίας και 20 οικογένειες ασκήσεων με διαφορετικά δεδομένα. Τα 79 νέα πακέτα είναι παραλλαγές εξάσκησης αυτών των οικογενειών, όχι 79 διαφορετικοί τύποι προβλημάτων. Κάθε νέο συμπληρωμένο τμήμα και ίχνος διαθέτει δεδομένα επαλήθευσης για εκτέλεση στον διερμηνευτή του έργου.
 - aepp-generator-client/src/gamification/GamificationProvider.tsx: φόρτωση, αλλαγή ημέρας, συγχρονισμός και API adapter.
 - aepp-generator-client/src/components/gamification/: challenge, banner, header widget, leaderboard, CSS και confetti.
@@ -42,7 +42,7 @@ GET /api/gamification · POST /start · POST /theory {day,answer} · POST /compl
 
 Το `GET /api/leaderboard?page=1&pageSize=20` είναι το endpoint εθνικής κατάταξης όλων των ημερών (προεπιλογές: `page=1`, `pageSize=20`). Υποστηρίζει επίσης `period` και `scope`, ενώ η `hasNextPage` δείχνει αν υπάρχει επόμενη σελίδα. Η μέγιστη τιμή `pageSize` είναι 50.
 
-Τα answers είναι λεξικό: questionId για ίχνος, questionId:blankId για κάθε κενό. Η βαθμολόγηση αγνοεί ό,τι στέλνει ο client ως απάντηση θεωρίας και χρησιμοποιεί την κλειδωμένη επιλογή. Ο client δεν επιλέγει studentId ούτε στέλνει score, XP ή χρόνο ολοκλήρωσης.
+Τα answers είναι λεξικό: questionId για ίχνος, questionId:blankId για κάθε κενό. Η βαθμολόγηση χρησιμοποιεί την ήδη κλειδωμένη επιλογή θεωρίας. Αν δεν έχει υποβληθεί ξεχωριστά, δέχεται true/false από το ίδιο λεξικό answers εντός του χρόνου. Ο client δεν επιλέγει studentId ούτε στέλνει score, XP ή χρόνο ολοκλήρωσης.
 
 ## Έλεγχοι
 
@@ -51,3 +51,21 @@ npm run test:gamification και npm run build μέσα στο aepp-generator-cl
 dotnet run --project AeppGenerator/tests/AeppGenerator.GamificationChecks -c Release.
 
 Το Release χρησιμοποιείται για να μην συγκρούεται με ήδη εκτελούμενο Debug API. Οι ασκήσεις ελέγχονται στον ενσωματωμένο διερμηνευτή του έργου, όχι στο εξωτερικό πρόγραμμα «Διερμηνευτής της ΓΛΩΣΣΑΣ». Δεν έχει πραγματοποιηθεί οπτικός έλεγχος browser στο συγκεκριμένο περιβάλλον.
+
+## Επιμελημένο seed 15 ημερών
+
+Το aepp-generator-client/src/gamification/dailyChallengesSeed.json περιέχει 15 σετ με 45 ερωτήσεις: TRUE_FALSE, FILL_BLANK και TRACE_OUTPUT. Κάθε απάντηση έχει αναλυτική εξήγηση και παραπομπή σε συγκεκριμένη παράγραφο του σχολικού βιβλίου (κεφάλαια 2, 3, 7, 8, 9, 10). Οι μικρές ασκήσεις αξιοποιούν ήδη ελεγμένες οικογένειες της τράπεζας, με νέα θεωρία και αναλυτικότερη διδακτική επεξήγηση· δεν πρόκειται για 45 εντελώς διαφορετικούς αλγορίθμους. Τα αποσπάσματα δηλώνονται ως τμήματα προγραμμάτων και συνοδεύονται από δηλώσεις και αρχικοποιήσεις.
+
+Η εντολή npm run seed:daily αναδημιουργεί την κοινή τράπεζα και εισάγει το seed χωρίς διπλότυπα IDs. Η άμεση εισαγωγή γίνεται με node scripts/import-daily-seed.mjs. Το API ενσωματώνει την κοινή τράπεζα ως resource, οπότε χρειάζεται rebuild/restart μετά από αλλαγή περιεχομένου. Δεν απαιτείται migration ή αντικατάσταση ολοκληρώσεων στη βάση.
+
+Νέα διαδρομή API, με την υπάρχουσα ταυτοποίηση:
+
+1. GET /api/daily-challenge/today επιστρέφει DailyChallengeDto: id, day, dayIndex, topic, serverNow και questions. Κάθε ερώτηση έχει id, type, questionText, codeSnippet, declarations, blanks με id/options. Δεν περιέχει correctAnswer, answer, accepted, explanation ή verification. Το GET δεν ξεκινά το χρονόμετρο και απαγορεύει caching.
+2. POST /api/daily-challenge/start ξεκινά το δεκάλεπτο. Η επανάληψη δεν μηδενίζει το χρονόμετρο. Είναι alias της υπάρχουσας έναρξης gamification/start.
+3. POST /api/daily-challenge/submit δέχεται {day, answers}. Τα κλειδιά είναι το πλήρες questionId και questionId:1 για το κενό. Οι τιμές είναι strings· η θεωρία δέχεται "true" ή "false". Η απόκριση είναι η υπάρχουσα DailyState, με completion.feedback, correctCount, xp, streak. Δεν γίνονται δεκτά client XP ή χρόνος. Η ταυτότητα προκύπτει από τη συνεδρία.
+
+Η επιλογή ημέρας χρησιμοποιεί το ρολόι του server σε Europe/Athens, χωρίς εξάρτηση από την ημερομηνία συσκευής. Η προσθήκη της φάσης 16/10 διατηρεί την παλιά αντιστοίχιση στις προηγούμενες ημερομηνίες. Τα 15 σετ εμφανίζονται από 16 έως 30/10/2026.
+
+Έλεγχοι: npm run test:gamification και AeppGenerator.GamificationChecks. Οι εκτελέσεις αφορούν τον ενσωματωμένο διερμηνευτή και όχι το εξωτερικό σχολικό πρόγραμμα.
+
+Επαλήθευση 15/10/2026: 21 έλεγχοι frontend, 33 backend checks και πραγματικά HTTP GET/start/submit σε ξεχωριστή SQLite. Επιβεβαιώθηκαν 3/3 σωστά, 130 XP, streak 1, μηδενική διπλή πίστωση σε ταυτόχρονα submits και απουσία λύσεων στο today DTO. Η θέση της σωστής επιλογής στα 15 κενά είναι ισορροπημένη (5 πρώτη, 5 δεύτερη, 5 τρίτη). Τα αποτελέσματα HTTP βρίσκονται στο .tmp/daily-verification/http-result.json.

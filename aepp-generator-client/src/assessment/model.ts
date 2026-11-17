@@ -1,8 +1,22 @@
 import type { ExamTheme } from '../types/exam'
 import type { Statement, ValueType } from '../interpreter/types'
 
-export type RubricKind = Statement['kind'] | 'functionCall' | 'arrayAccess' | 'arrayWrite' | 'accumulation' | 'subprogramParameters'
-export interface RubricCriterion { kind: RubricKind; points: number; subprogram?: string; variableName?: string; arrayName?: string; parameters?: { name?: string; type: ValueType; dimensions?: number[] }[] }
+export type RubricKind =
+  | Statement['kind']
+  | 'functionCall'
+  | 'arrayAccess'
+  | 'arrayWrite'
+  | 'accumulation'
+  | 'subprogramParameters'
+  | import('./astInspectors').StructuralCheckKind
+export interface RubricCriterion {
+  kind: RubricKind
+  points: number
+  subprogram?: string
+  variableName?: string
+  arrayName?: string
+  parameters?: { name?: string; type: ValueType; dimensions?: number[] }[]
+}
 export interface QuestionBase {
   id: string
   code: string
@@ -11,21 +25,51 @@ export interface QuestionBase {
   marks: number
   chapter: string
   solution: string
+  subquestions?: { code: string; marks: number; prompt: string }[]
 }
 
 export type AssessmentQuestion =
   | (QuestionBase & { kind: 'trueFalse'; statements: { id: string; text: string; answer: boolean }[] })
-  | (QuestionBase & { kind: 'matching'; pairs: { id: string; left: string; rightId: string }[]; choices: { id: string; text: string }[] })
+  | (QuestionBase & {
+      kind: 'matching'
+      pairs: { id: string; left: string; rightId: string }[]
+      choices: { id: string; text: string }[]
+    })
   | (QuestionBase & { kind: 'choice'; options: { id: string; text: string }[]; correctId: string })
   | (QuestionBase & { kind: 'fill'; accepted: string[] })
   | (QuestionBase & { kind: 'codeBlanks'; template: string; blanks: { id: string; accepted: string[] }[] })
   | (QuestionBase & { kind: 'trace'; columns: string[]; rowLabels: string[]; expected: string[][] })
-  | (QuestionBase & { kind: 'program'; referenceCode: string; gradingMode: 'runtime' | 'review'; testCases: ProgramTestCase[]; previewCases?: ProgramTestCase[]; rubric: RubricCriterion[];fuzzSpecification?:import('./fuzzSpecification').FuzzSpecification })
+  | (QuestionBase & {
+      kind: 'program'
+      referenceCode: string
+      gradingMode: 'runtime' | 'review'
+      evaluationStrategy?: 'hybrid' | 'functional'
+      testCases: ProgramTestCase[]
+      previewCases?: ProgramTestCase[]
+      rubric: RubricCriterion[]
+      fuzzSpecification?: import('./fuzzSpecification').FuzzSpecification
+    })
   | (QuestionBase & { kind: 'open' })
 
-export interface ProgramTestCase { id: string; inputs: string[]; expectedOutput: string[] }
-export interface AssessmentSection { theme: ExamTheme; marks: number; questions: AssessmentQuestion[] }
-export interface AssessmentExam { id: string; title: string; durationMinutes: number; sections: AssessmentSection[]; source: 'practice' | 'generated' }
+export interface ProgramTestCase {
+  id: string
+  inputs: string[]
+  expectedOutput: string[]
+  description?: string
+}
+export interface AssessmentSection {
+  theme: ExamTheme
+  marks: number
+  questions: AssessmentQuestion[]
+}
+export interface AssessmentExam {
+  id: string
+  title: string
+  durationMinutes: number
+  sections: AssessmentSection[]
+  source: 'practice' | 'generated'
+  difficulty?: string
+}
 export type AnswerValue = string | Record<string, string> | string[][]
 export type AnswerSheet = Record<string, AnswerValue | undefined>
 
@@ -52,8 +96,27 @@ export interface QuestionResult {
   referenceCode?: string
   studentCode?: string
   astSummary?: string
+  grading?: ProgramGradingBreakdown
+  /** Σωστό/λάθος ανά επιμέρους στοιχείο αντικειμενικού ερωτήματος (πρόταση, ζεύγος, κενό ή κελί). */
+  itemResults?: boolean[]
 }
-export interface SectionResult { theme: ExamTheme; earned: number; pending: number; max: number; questions: QuestionResult[] }
+export interface ProgramGradingBreakdown {
+  strategy: 'hybrid' | 'functional'
+  executionScore: number
+  executionMax: number
+  structuralScore: number
+  structuralMax: number
+  testCasesPassed: number
+  testCasesTotal: number
+  structuralChecks: { kind: RubricKind; points: number; met: boolean }[]
+}
+export interface SectionResult {
+  theme: ExamTheme
+  earned: number
+  pending: number
+  max: number
+  questions: QuestionResult[]
+}
 export interface AssessmentReport {
   title: string
   earned: number

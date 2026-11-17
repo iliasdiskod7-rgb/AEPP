@@ -29,24 +29,28 @@ test('το public client fallback δεν περιέχει answer keys, reference
     assert.equal(question.referenceCode, '')
     assert.deepEqual(question.testCases, [])
   }
-  assert.equal(JSON.stringify(publicPracticeExam).includes('expectedOutput'), false)
+  assert.ok(questions.filter(question => question.kind === 'program').every(question => (question.previewCases?.length ?? 0) <= 5))
 })
 
-test('η αναφορά κρύβει τις ενδεικτικές απαντήσεις μέχρι το αίτημα αποκάλυψης', async () => {
+test('η αναφορά δείχνει απαντήσεις δίπλα στις λύσεις, με ✓/✗ και χωρίς βαθμούς', async () => {
   const report = await gradeAssessment(practiceExam, {}, async () => [])
   const html = renderToStaticMarkup(React.createElement(AssessmentReportView, {
     exam: practiceExam, report, insight: null, insightLoading: false, insightError: '', aiAvailable: false,
     onRetry() {}, onRetryInsight() {}, onOpenDebugger() {}, onGrade: async () => {}, onRefresh: async () => {},
     attempt: { attemptId: 'attempt', examId: practiceExam.id, examTitle: practiceExam.title, studentName: 'Μαθητής', startedAt: '', submittedAt: '', autoGradeScore: 0, finalScore: 0, status: 'SUBMITTED', version: 1, exam: practiceExam, report, questionSubmissions: [], gradeRevisions: [] },
   }))
-  assert.match(html, /Προβολή ενδεικτικής λύσης/u)
-  assert.doesNotMatch(html, /Η ουρά λειτουργεί με σειρά άφιξης/u)
+  assert.match(html, /Απόκρυψη ενδεικτικών λύσεων/u)
+  assert.match(html, /Ενδεικτική απάντηση/u)
+  assert.match(html, /aria-label="Λάθος"/u)
+  assert.match(html, /0 από \d+ σωστά/u)
+  assert.doesNotMatch(html, /text-slate-400">\/100|προσωρινή βαθμολογία|μονάδες χωρίς αυτόματη αξιολόγηση|Αυτόματος βαθμός|Τι να διαβάσεις στη συνέχεια/u)
+  assert.ok(report.sections.flatMap(section => section.questions).some(question => question.itemResults?.length > 1))
 })
 
 test('το διαγώνισμα έχει 25 μόρια ανά θέμα και ο πίνακας καταλήγει στην ΕΞΟΔΟΣ', () => {
   assert.doesNotThrow(() => validateAssessmentExam(practiceExam))
   assert.deepEqual(practiceExam.sections.map(section => section.marks), [25, 25, 25, 25])
-  assert.equal(practiceExam.sections[1].questions[1].columns.at(-1), 'ΕΞΟΔΟΣ')
+  assert.ok(practiceExam.sections[1].questions.some(question => question.kind === 'trace' && question.columns.includes('ΕΞΟΔΟΣ')))
 })
 
 test('η ενδεικτική λύση του Γ περνά τέσσερις δοκιμές, συμπεριλαμβανομένων μηδενικών και άκυρης εισόδου', () => {
@@ -57,28 +61,30 @@ test('η ενδεικτική λύση του Γ περνά τέσσερις δ�
 
 test('η ενδεικτική λύση του Δ περνά τις δοκιμές πινάκων και συνάρτησης', () => {
   const results = runTestCases(programD.referenceCode, programD.testCases)
-  assert.equal(results.length, 3)
+  assert.equal(results.length, programD.testCases.length)
+  assert.equal(results.length, 4)
   assert.ok(results.every(result => result.passed), JSON.stringify(results))
 })
 
 test('η αυτόματη βαθμολόγηση δίνει αναλυτικά μόρια και στο Δ', async () => {
-  const answers = {
-    a1: Object.fromEntries(practiceExam.sections[0].questions[0].statements.map(item => [item.id, item.answer ? 'Σωστό' : 'Λάθος'])),
-    a2: Object.fromEntries(practiceExam.sections[0].questions[1].pairs.map(item => [item.id, item.rightId])),
-    a3: practiceExam.sections[0].questions[2].correctId,
-    a4: 'καλεσε',
-    b1: Object.fromEntries(practiceExam.sections[1].questions[0].blanks.map(item => [item.id, item.accepted[0]])),
-    b2: practiceExam.sections[1].questions[1].expected,
-    c1: programC.referenceCode,
-    d1: practiceExam.sections[3].questions[0].referenceCode,
+  const answers = {}
+  for (const question of practiceExam.sections.flatMap(section => section.questions)) {
+    if (question.kind === 'trueFalse') answers[question.id] = Object.fromEntries(question.statements.map(item=>[item.id,item.answer?'Σωστό':'Λάθος']))
+    else if (question.kind === 'matching') answers[question.id] = Object.fromEntries(question.pairs.map(item=>[item.id,item.rightId]))
+    else if (question.kind === 'choice') answers[question.id] = question.correctId
+    else if (question.kind === 'fill') answers[question.id] = question.accepted[0]
+    else if (question.kind === 'codeBlanks') answers[question.id] = Object.fromEntries(question.blanks.map(item=>[item.id,item.accepted[0]]))
+    else if (question.kind === 'trace') answers[question.id] = question.expected
+    else if (question.kind === 'program') answers[question.id] = question.referenceCode
   }
   const report = await gradeAssessment(practiceExam, answers, async (source, cases) => runTestCases(source, cases))
-  assert.equal(report.earned, 100, JSON.stringify(report.sections.slice(2)))
-  assert.equal(report.pending, 0)
-  assert.equal(report.grade20, 20)
-  assert.deepEqual(report.sections.map(section => section.earned), [25, 25, 25, 25])
+  const pending = practiceExam.sections.flatMap(section=>section.questions).filter(question=>question.kind==='open').reduce((sum,question)=>sum+question.marks,0)
+  assert.equal(report.earned, 100-pending, JSON.stringify(report.sections.slice(2)))
+  assert.equal(report.pending, pending)
+  assert.equal(report.grade20, (100-pending)/5)
+  assert.deepEqual(report.sections.slice(2).map(section => section.earned), [25, 25])
   assert.equal(report.sections[2].questions[0].programCases.length, 4)
-  assert.equal(report.sections[3].questions[0].programCases.length, 3)
+  assert.equal(report.sections[3].questions[0].programCases.length, 4)
   assert.throws(() => applyTeacherScore(report, 'd1', 30), /έγκυρο βαθμό/u)
 })
 
@@ -87,20 +93,25 @@ test('λανθασμένες τιμές και κώδικας δεν λαμβά�
     async (source, cases) => runTestCases(source, cases))
   assert.ok(report.sections[0].questions[0].earned < 10)
   assert.equal(report.sections[2].questions[0].earned, 0)
-  assert.equal(report.pending, 0)
+  assert.equal(report.pending, practiceExam.sections.flatMap(section=>section.questions).filter(question=>question.kind==='open').reduce((sum,question)=>sum+question.marks,0))
 })
 
 test('η μερική βαθμολογία μοιράζεται σωστά σε προτάσεις, κενά και κελιά', async () => {
-  const trace = practiceExam.sections[1].questions[1].expected.map(row => [...row])
-  trace[1][4] = 'λάθος'
+  const traceQuestion = practiceExam.sections[1].questions.find(question=>question.kind==='trace')
+  const blanks = practiceExam.sections[1].questions.find(question=>question.kind==='codeBlanks')
+  const trace = traceQuestion.expected.map(row => [...row])
+  trace[1][0] = 'λάθος'
+  const blankAnswers = Object.fromEntries(blanks.blanks.map(item=>[item.id,item.accepted[0]]))
+  blankAnswers[blanks.blanks[0].id] = 'άκυρη απάντηση'
   const report = await gradeAssessment(practiceExam, {
     a1: { 'a1-1': 'Σωστό', 'a1-2': 'Λάθος', 'a1-3': 'Σωστό', 'a1-4': 'Σωστό', 'a1-5': 'Σωστό' },
-    b1: { '1': '0', '2': '1', '3': 'ΤΟΤΕ', '4': '-', '5': 'ΓΡΑΨΕ' },
-    b2: trace,
+    [blanks.id]: blankAnswers,
+    [traceQuestion.id]: trace,
   }, async (source, cases) => runTestCases(source, cases))
   assert.equal(report.sections[0].questions[0].earned, 8)
-  assert.equal(report.sections[1].questions[0].earned, 12)
-  assert.equal(report.sections[1].questions[1].earned, 9)
+  assert.equal(report.sections[1].questions.find(question=>question.questionId===blanks.id).earned, Math.round(blanks.marks*(blanks.blanks.length-1)/blanks.blanks.length*100)/100)
+  const cells=traceQuestion.expected.flat().length
+  assert.equal(report.sections[1].questions.find(question=>question.questionId===traceQuestion.id).earned, Math.round(traceQuestion.marks*(cells-1)/cells*100)/100)
 })
 
 test('παραγόμενο διαγώνισμα χωρίς δομημένο κλειδί παραμένει για έλεγχο καθηγητή', async () => {
@@ -157,7 +168,8 @@ test('corrupted LocalStorage καθαρίζεται χωρίς εξαίρεση 
  }
 })
 test('έγκυρο draft διατηρείται και αποκλεισμένο storage δεν προκαλεί crash',()=>{
- const answer={c1:'ΓΡΑΨΕ 1',b2:practiceExam.sections[1].questions[1].expected}
+ const traceQuestion=practiceExam.sections[1].questions.find(question=>question.kind==='trace')
+ const answer={c1:'ΓΡΑΨΕ 1',[traceQuestion.id]:traceQuestion.expected}
  assert.deepEqual(readAssessmentDraft(practiceExam,'student',{getItem:()=>JSON.stringify(answer),removeItem:()=>assert.fail('valid')}),answer)
  assert.deepEqual(readAssessmentDraft(practiceExam,'student',{getItem:()=>{throw Error('blocked')},removeItem:()=>{throw Error('blocked')}}),{})
 })

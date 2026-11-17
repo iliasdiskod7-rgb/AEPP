@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AeppGenerator.Api.Assessment;
 
-public sealed class ExamAttemptService(AssessmentDbContext db, ExamCatalog catalog, AccountStore accounts)
+public sealed class ExamAttemptService(AssessmentDbContext db, ExamCatalog catalog, AccountStore accounts, ServerProgramGrader grader)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -55,6 +55,23 @@ public sealed class ExamAttemptService(AssessmentDbContext db, ExamCatalog catal
         var submissions = request.Questions.ToDictionary(question => question.QuestionId, StringComparer.Ordinal);
         var expected = definition["sections"]!.AsArray().Sum(section => section!["questions"]!.AsArray().Count);
         if (submissions.Count != expected) throw new ArgumentException("Απαιτείται ακριβώς μία υποβολή για κάθε ερώτημα.");
+        var allQuestions=definition["sections"]!.AsArray().SelectMany(section=>section!["questions"]!.AsArray()).ToArray();
+        var answers=new JsonObject();
+        foreach(var question in allQuestions) {
+            var questionId=question!["id"]!.GetValue<string>();
+            if(!submissions.TryGetValue(questionId,out var submission))throw new ArgumentException("Η υποβολή περιέχει άγνωστα ή ελλιπή ερωτήματα.");
+            var marks=question["marks"]!.GetValue<decimal>();
+            var kind=question["kind"]!.GetValue<string>();
+            if(submission.MaxPoints!=marks||submission.AutoPoints<0||submission.AutoPoints>marks||decimal.Round(submission.AutoPoints,2)!=submission.AutoPoints)
+                throw new ArgumentException("Οι μονάδες της υποβολής δεν συμφωνούν με το διαγώνισμα.");
+            if((kind is "program" or "open")&&submission.AutoPoints!=0)throw new ArgumentException("Ο βαθμός ανάπτυξης υπολογίζεται στον διακομιστή.");
+            answers[questionId]=ParseAnswer(submission.StudentAnswerJson)?.DeepClone();
+            var tests=ParseTests(submission.TestResultsJson);
+            if(kind!="program"&&tests.Count!=0)throw new ArgumentException("Δοκιμές εκτέλεσης επιτρέπονται μόνο σε ερωτήματα προγραμματισμού.");
+        }
+        Dictionary<string,JsonNode> runtimeResults=[];
+        if(allQuestions.Any(q=>q!["kind"]!.GetValue<string>()=="program"&&q["gradingMode"]?.GetValue<string>()=="runtime"&&!string.IsNullOrWhiteSpace(Text(answers[q["id"]!.GetValue<string>()]))))
+            runtimeResults=await grader.Grade(definition,answers,ct);
         decimal total = 0, pending = 0;
         var position = 0;
         foreach (var section in definition["sections"]!.AsArray())
@@ -72,28 +89,34 @@ public sealed class ExamAttemptService(AssessmentDbContext db, ExamCatalog catal
                 var answer = ParseAnswer(submitted.StudentAnswerJson);
                 var tests = ParseTests(submitted.TestResultsJson);
                 var kind = question["kind"]!.GetValue<string>();
-                var review = kind is "open" or "program";
-                if (review && submitted.AutoPoints != 0) throw new ArgumentException("Τα ερωτήματα ελέγχου καθηγητή δεν έχουν αυτόματες μονάδες.");
+                var review = kind == "open" || (kind == "program" && question["gradingMode"]?.GetValue<string>() != "runtime");
+                runtimeResults.TryGetValue(id,out var runtimeResult);
+                if ((review || kind=="program") && submitted.AutoPoints != 0) throw new ArgumentException("Τα ερωτήματα ελέγχου καθηγητή δεν έχουν αυτόματες μονάδες.");
                 if (kind != "program" && tests.Count != 0) throw new ArgumentException("Δοκιμές εκτέλεσης επιτρέπονται μόνο σε ερωτήματα προγραμματισμού.");
                 // Αντικειμενικά ερωτήματα: νέα διόρθωση με την επίσημη τράπεζα στο API.
                 // Ο browser δεν είναι έμπιστη βαθμολογική αρχή για υποβολές προγραμματισμού.
-                var points = review ? 0 : kind == "program" ? string.IsNullOrWhiteSpace(Text(answer)) ? 0 : submitted.AutoPoints : ObjectiveScore(question, answer, max);
+                List<bool> itemResults = [];
+                var points = review ? 0 : kind == "program" ? runtimeResult?["earned"]?.GetValue<decimal>() ?? 0 : ObjectiveScore(question, answer, max, itemResults);
+                if(kind=="program") tests=runtimeResult?["programCases"]?.DeepClone().AsArray()??new JsonArray();
                 var waiting = review ? max : 0;
                 db.QuestionSubmissions.Add(new QuestionSubmission {
                     Id = Guid.NewGuid(), ExamAttemptId = attempt.Id, QuestionId = id,
                     Theme = theme, QuestionCode = question["code"]!.GetValue<string>(), Position = position++,
-                    StudentAnswerJson = submitted.StudentAnswerJson, TestResultsJson = submitted.TestResultsJson,
+                    StudentAnswerJson = submitted.StudentAnswerJson, TestResultsJson = tests.ToJsonString(),
                     AutoPoints = points, MaxPoints = max
                 });
                 var result = new JsonObject {
                     ["questionId"] = id, ["code"] = question["code"]!.DeepClone(), ["earned"] = points, ["max"] = max, ["pending"] = waiting,
-                    ["feedback"] = review ? "Η απάντηση χρειάζεται αξιολόγηση από καθηγητή." : kind == "program" ? (submitted.Feedback ?? "Προσωρινή αξιολόγηση από δοκιμές στον browser.") : $"{points}/{max} μονάδες από έλεγχο των απαντήσεων στον διακομιστή.",
+                    ["feedback"] = review ? "Η απάντηση δεν βαθμολογείται αυτόματα. Σύγκρινέ τη με την ενδεικτική λύση." : kind == "program" ? (runtimeResult?["feedback"]?.GetValue<string>() ?? "Δεν δόθηκε εκτελέσιμος κώδικας.") : $"{points}/{max} μονάδες από έλεγχο των απαντήσεων στον διακομιστή.",
                     ["studentAnswer"] = submitted.StudentAnswer ?? Text(answer), ["expectedAnswer"] = question["solution"]!.DeepClone(),
                     ["chapter"] = question["chapter"]!.DeepClone()
                 };
+                // Σωστό/λάθος ανά επιμέρους στοιχείο, για προβολή χωρίς βαθμούς.
+                if (itemResults.Count > 0) result["itemResults"] = new JsonArray(itemResults.Select(item => (JsonNode?)JsonValue.Create(item)).ToArray());
                 if (kind == "program") {
                     result["studentCode"] = Text(answer); result["referenceCode"] = question["referenceCode"]!.DeepClone();
-                    result["programCases"] = tests; result["astSummary"] = submitted.AstSummary ?? "";
+                    result["programCases"] = tests; result["astSummary"] = runtimeResult?["astSummary"]?.DeepClone() ?? JsonValue.Create("");
+                    if (runtimeResult?["grading"] is { } grading) result["grading"] = grading.DeepClone();
                 }
                 results.Add(result); sectionScore += points; sectionPending += waiting;
             }
@@ -109,7 +132,7 @@ public sealed class ExamAttemptService(AssessmentDbContext db, ExamCatalog catal
         attempt.ReportJson = new JsonObject {
             ["title"] = attempt.Exam.Title, ["earned"] = total, ["pending"] = pending, ["max"] = 100,
             ["grade20"] = decimal.Round(total / 5, 2, MidpointRounding.AwayFromZero), ["sections"] = reportSections,
-            ["recommendations"] = new JsonArray("Μελέτησε την αναλυτική διόρθωση και ζήτησε από τον καθηγητή επίσημη αξιολόγηση.")
+            ["recommendations"] = new JsonArray("Μελέτησε την αναλυτική διόρθωση και σύγκρινε τις απαντήσεις σου με τις ενδεικτικές λύσεις.")
         }.ToJsonString();
         try { await db.SaveChangesAsync(ct); }
         catch (DbUpdateConcurrencyException)
@@ -121,27 +144,10 @@ public sealed class ExamAttemptService(AssessmentDbContext db, ExamCatalog catal
         return await Get(attempt.Id, userId, false, ct);
     }
 
-    public async Task<AttemptDetail> Grade(string teacherId, Guid attemptId, GradeAttemptRequest request, CancellationToken ct)
-    {
-        if (accounts.FindUser(teacherId)?.Role != "TEACHER") throw new UnauthorizedAccessException();
-        if (request.RevisedScore is not { } score || score is < 0 or > 100 || decimal.Round(score, 2) != score || string.IsNullOrWhiteSpace(request.TeacherComments) || request.TeacherComments.Length > 5000)
-            throw new ArgumentException("Δώσε βαθμό 0–100 με έως δύο δεκαδικά και σχόλιο αξιολόγησης.");
-        var attempt = await db.ExamAttempts.SingleOrDefaultAsync(item => item.Id == attemptId, ct) ?? throw new AttemptNotFoundException();
-        if (attempt.Status == ExamAttemptStatus.IN_PROGRESS) throw new AttemptConflictException("Η προσπάθεια δεν έχει υποβληθεί ακόμη.");
-        if (attempt.Version != request.ExpectedVersion) throw new AttemptConflictException("Υπάρχει νεότερη αξιολόγηση. Ανανέωσε την προσπάθεια πριν αποθηκεύσεις.");
-        attempt.FinalScore = score;
-        attempt.Status = ExamAttemptStatus.GRADED_BY_TEACHER;
-        attempt.Version++;
-        db.GradeRevisions.Add(new GradeRevision { Id = Guid.NewGuid(), ExamAttemptId = attemptId, TeacherId = teacherId, RevisedScore = score, TeacherComments = request.TeacherComments.Trim(), RevisedAt = DateTime.UtcNow, Version = attempt.Version });
-        try { await db.SaveChangesAsync(ct); }
-        catch (DbUpdateConcurrencyException) { throw new AttemptConflictException("Η αξιολόγηση άλλαξε από άλλη καταχώριση. Ανανέωσε την προσπάθεια."); }
-        return await Get(attemptId, teacherId, true, ct);
-    }
-
     public async Task<AttemptPage> History(string userId, bool teacherQueue, int page, int pageSize, CancellationToken ct)
     {
         if (page is < 1 or > 1000000 || pageSize is < 1 or > 50) throw new ArgumentException("Μη έγκυρη σελιδοποίηση ιστορικού.");
-        var query = db.ExamAttempts.AsNoTracking().Where(item => teacherQueue ? item.Status != ExamAttemptStatus.IN_PROGRESS : item.UserId == userId);
+        var query = db.ExamAttempts.AsNoTracking().Where(item => item.UserId == userId);
         var total = await query.CountAsync(ct);
         var rows = await query.OrderByDescending(item => item.StartedAt).ThenByDescending(item => item.Id).Skip((page - 1) * pageSize).Take(pageSize)
             .Select(item => new { item.Id, item.ExamId, ExamTitle = item.Exam.Title, StudentName = item.User.FullName,
@@ -157,12 +163,10 @@ public sealed class ExamAttemptService(AssessmentDbContext db, ExamCatalog catal
     {
         var attempt = await db.ExamAttempts.AsNoTracking().AsSplitQuery().Include(item => item.Exam).Include(item => item.User)
             .Include(item => item.QuestionSubmissions).Include(item => item.GradeRevisions).ThenInclude(revision => revision.Teacher)
-            .SingleOrDefaultAsync(item => item.Id == id && (item.UserId == userId || teacher && item.Status != ExamAttemptStatus.IN_PROGRESS), ct) ?? throw new AttemptNotFoundException();
+            .SingleOrDefaultAsync(item => item.Id == id && item.UserId == userId, ct) ?? throw new AttemptNotFoundException();
         using var exam = JsonDocument.Parse(attempt.Exam.DefinitionJson);
         using var report = JsonDocument.Parse(attempt.ReportJson);
-        var publicExam = teacher && attempt.Status != ExamAttemptStatus.IN_PROGRESS
-            ? exam.RootElement.Clone()
-            : ExamPublicProjection.ForTaking(exam.RootElement);
+        var publicExam = ExamPublicProjection.ForTaking(exam.RootElement);
         return new(attempt.Id, attempt.ExamId, attempt.Exam.Title, attempt.User.FullName, attempt.StartedAt, attempt.SubmittedAt,
             attempt.AutoGradeScore, attempt.FinalScore, attempt.Status, attempt.Version, publicExam,
             attempt.Status == ExamAttemptStatus.IN_PROGRESS ? null : report.RootElement.Clone(),
@@ -195,29 +199,48 @@ public sealed class ExamAttemptService(AssessmentDbContext db, ExamCatalog catal
     }
 
     private static string Text(JsonNode? answer) => answer is JsonValue value && value.TryGetValue<string>(out var text) ? text : answer?.ToJsonString() ?? "";
-    private static string Normalize(string value) => Regex.Replace(string.Concat(value.Normalize(NormalizationForm.FormD).Where(character => CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)), @"\s", "").ToUpperInvariant();
-    private static decimal ObjectiveScore(JsonNode question, JsonNode? answer, decimal max)
+    private static string Normalize(string value)
+    {
+        var normalized = Regex.Replace(string.Concat(value.Normalize(NormalizationForm.FormD).Where(character => CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)), @"[_\s]+", "").ToUpperInvariant();
+        return Regex.Replace(normalized, @"(\p{L})[.!;:]+$", "$1");
+    }
+    private static bool BooleanAnswer(string value, bool expected)
+    {
+        var answer = Normalize(value);
+        var target = expected ? "ΣΩΣΤΟ" : "ΛΑΘΟΣ";
+        if (answer == target) return true;
+        if (answer.Length != target.Length) return false;
+        for (var index = 0; index < target.Length - 1; index++)
+        {
+            var letters = target.ToCharArray();
+            (letters[index], letters[index + 1]) = (letters[index + 1], letters[index]);
+            if (answer == new string(letters)) return true;
+        }
+        return false;
+    }
+    private static decimal ObjectiveScore(JsonNode question, JsonNode? answer, decimal max, List<bool> items)
     {
         string At(string id) => answer is JsonObject map ? Text(map[id]) : "";
-        bool Accepted(JsonNode? values, string value) => values!.AsArray().Any(expected => Normalize(Text(expected)) == Normalize(value));
-        int correct = 0, count = 0;
+        bool Accepted(JsonNode? values, string value) => Normalize(value).Length > 0 && values!.AsArray().Any(expected => Normalize(Text(expected)) == Normalize(value));
+        void Mark(bool ok) => items.Add(ok);
         switch (question["kind"]!.GetValue<string>())
         {
-            case "trueFalse": foreach (var item in question["statements"]!.AsArray()) { count++; if (At(item!["id"]!.GetValue<string>()) == (item["answer"]!.GetValue<bool>() ? "Σωστό" : "Λάθος")) correct++; } break;
-            case "matching": foreach (var item in question["pairs"]!.AsArray()) { count++; if (At(item!["id"]!.GetValue<string>()) == item["rightId"]!.GetValue<string>()) correct++; } break;
-            case "choice": count = 1; correct = Text(answer) == question["correctId"]!.GetValue<string>() ? 1 : 0; break;
-            case "fill": count = 1; correct = Accepted(question["accepted"], Text(answer)) ? 1 : 0; break;
-            case "codeBlanks": foreach (var item in question["blanks"]!.AsArray()) { count++; if (Accepted(item!["accepted"], At(item["id"]!.GetValue<string>()))) correct++; } break;
+            case "trueFalse": foreach (var item in question["statements"]!.AsArray()) Mark(BooleanAnswer(At(item!["id"]!.GetValue<string>()), item["answer"]!.GetValue<bool>())); break;
+            case "matching": foreach (var item in question["pairs"]!.AsArray()) Mark(At(item!["id"]!.GetValue<string>()) == item["rightId"]!.GetValue<string>()); break;
+            case "choice": Mark(Text(answer) == question["correctId"]!.GetValue<string>()); break;
+            case "fill": Mark(Accepted(question["accepted"], Text(answer))); break;
+            case "codeBlanks": foreach (var item in question["blanks"]!.AsArray()) Mark(Accepted(item!["accepted"], At(item["id"]!.GetValue<string>()))); break;
             case "trace":
                 var rows = answer as JsonArray;
                 var expected = question["expected"]!.AsArray();
                 for (var row = 0; row < expected.Count; row++) for (var column = 0; column < expected[row]!.AsArray().Count; column++) {
-                    count++; var cells = rows is not null && row < rows.Count ? rows[row] as JsonArray : null;
-                    if (Normalize(cells is not null && column < cells.Count ? Text(cells[column]) : "") == Normalize(Text(expected[row]![column]))) correct++;
+                    var cells = rows is not null && row < rows.Count ? rows[row] as JsonArray : null;
+                    Mark(Normalize(cells is not null && column < cells.Count ? Text(cells[column]) : "") == Normalize(Text(expected[row]![column])));
                 }
                 break;
             default: throw new ArgumentException("Μη υποστηριζόμενος τύπος ερωτήματος.");
         }
-        return count == 0 ? 0 : decimal.Round(max * correct / count, 2, MidpointRounding.AwayFromZero);
+        var correct = items.Count(item => item);
+        return items.Count == 0 ? 0 : decimal.Round(max * correct / items.Count, 2, MidpointRounding.AwayFromZero);
     }
 }

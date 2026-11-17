@@ -52,6 +52,9 @@ public sealed class GamificationService {
  private readonly string rotationStartsOn;
  private readonly int legacyPackCount;
  private readonly int firstPackIndex;
+ private readonly string expandedStartsOn;
+ private readonly int expandedFirstPackIndex;
+ private readonly int previousPackCount;
  private static readonly TimeZoneInfo Athens=TimeZoneInfo.FindSystemTimeZoneById("Europe/Athens");
  public GamificationService(string path,TimeProvider? clock=null,AccountStore? store=null) {
   this.path=path;this.store=store;this.clock=clock??TimeProvider.System;
@@ -61,6 +64,10 @@ public sealed class GamificationService {
   rotationStartsOn=bank["rotation"]!["startsOn"]!.GetValue<string>();
   legacyPackCount=bank["rotation"]!["legacyPackCount"]!.GetValue<int>();
   firstPackIndex=bank["rotation"]!["firstPackIndex"]!.GetValue<int>();
+  var expansion=bank["rotation"]!["expansion"]!;
+  expandedStartsOn=expansion["startsOn"]!.GetValue<string>();
+  expandedFirstPackIndex=expansion["firstPackIndex"]!.GetValue<int>();
+  previousPackCount=expansion["previousPackCount"]!.GetValue<int>();
  }
  public DateTimeOffset Now=>clock.GetUtcNow();
  public string Day=>TimeZoneInfo.ConvertTime(Now,Athens).ToString("yyyy-MM-dd");
@@ -68,8 +75,10 @@ public sealed class GamificationService {
  private static int Week(string day){var n=Number(day);return n-((n+3)%7+7)%7;}
  private JsonObject Pack {
   get {
+   var expandedDelta=Number(Day)-Number(expandedStartsOn);
+   if(expandedDelta>=0)return packs[(expandedFirstPackIndex+expandedDelta)%packs.Count]!.AsObject();
    var delta=Number(Day)-Number(rotationStartsOn);
-   var index=delta<0?((Number(Day)%legacyPackCount)+legacyPackCount)%legacyPackCount:(firstPackIndex+delta)%packs.Count;
+   var index=delta<0?((Number(Day)%legacyPackCount)+legacyPackCount)%legacyPackCount:(firstPackIndex+delta)%previousPackCount;
    return packs[index]!.AsObject();
   }
  }
@@ -78,6 +87,15 @@ public sealed class GamificationService {
  private AnswerFeedback Grade(int i,Dictionary<string,string> answers){var q=Pack["questions"]![i]!;var id=q["id"]!.GetValue<string>();var kind=q["kind"]!.GetValue<string>();var blanks=q["blanks"]!.AsArray();var expected=kind=="fill"?string.Join(", ",blanks.Select(b=>b!["accepted"]![0]!.GetValue<string>())):q["answer"]!.GetValue<string>();var correct=kind=="fill"?blanks.All(b=>b!["accepted"]!.AsArray().Any(a=>Normalize(a!.GetValue<string>())==Normalize(answers.GetValueOrDefault(id+":"+b["id"]!.GetValue<string>(),"")))):Normalize(expected)==Normalize(answers.GetValueOrDefault(id,""));return new(correct,kind=="theory"?(expected=="true"?"Σωστό":"Λάθος"):expected,q["explanation"]!.GetValue<string>(),q["reference"]!.DeepClone());}
  private object State(StudentProfile p){var questions=Pack["questions"]!.AsArray().Select(q=>new {id=q!["id"]!.GetValue<string>(),kind=q["kind"]!.GetValue<string>(),prompt=q["prompt"]!.GetValue<string>(),code=q["code"]?.GetValue<string>(),declarations=q["declarations"]?.GetValue<string>(),blanks=q["blanks"]!.AsArray().Select(b=>new{id=b!["id"]!.GetValue<string>(),options=b["options"]!.DeepClone()})});return new{profile=p,day=Day,title=Pack["title"]!.GetValue<string>(),questions,streak=store is null?Streak(p,Day):p.CurrentStreak,xp=store is null?p.Completions.Sum(c=>c.Xp):p.TotalXP,completion=p.Completions.FirstOrDefault(c=>c.Day==Day),theoryFeedback=p.Attempt?.Day==Day&&p.Attempt.TheoryAnswer!=null?Grade(0,new(){[Pack["questions"]![0]!["id"]!.GetValue<string>()]=p.Attempt.TheoryAnswer}):null,serverNow=Now};}
  public async Task<T> Transaction<T>(string id,Func<StudentProfile,List<StudentProfile>,T> action){if(store!=null)return await store.ProfileTransaction(id,Day,p=>action(p,[]));await gate.WaitAsync();try{var profiles=File.Exists(path)?JsonSerializer.Deserialize<List<StudentProfile>>(await File.ReadAllTextAsync(path),Json)??[]:[];var p=profiles.Find(p=>p.Id==id);if(p==null){p=new(){Id=id};profiles.Add(p);}var result=action(p,profiles);Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);var temp=path+".tmp";await File.WriteAllTextAsync(temp,JsonSerializer.Serialize(profiles,Json));File.Move(temp,path,true);return result;}finally{gate.Release();}}
+ public DailyChallengeDto Today() {
+  var pack=Pack;
+  var index=packs.IndexOf(pack);
+  return new(pack["id"]!.GetValue<string>(),Day,pack["dayIndex"]?.GetValue<int>()??index+1,pack["title"]!.GetValue<string>(),Now,
+   pack["questions"]!.AsArray().Select(q=>new DailyQuestionDto(q!["id"]!.GetValue<string>(),
+    q["kind"]!.GetValue<string>() switch {"theory"=>"TRUE_FALSE","fill"=>"FILL_BLANK",_=>"TRACE_OUTPUT"},
+    q["prompt"]!.GetValue<string>(),q["code"]?.GetValue<string>(),q["declarations"]?.GetValue<string>(),
+    q["blanks"]!.AsArray().Select(b=>new DailyBlankDto(b!["id"]!.GetValue<string>(),b["options"]!.AsArray().Select(o=>o!.GetValue<string>()).ToList())).ToList())).ToList());
+ }
  public Task<object> Get(string id)=>store is null?Transaction(id,(p,_)=>State(p)):Task.FromResult(State(store.ReadProfile(id,Day)));
  public Task<object> Start(string id)=>Transaction(id,(p,_)=>{if(!p.Completions.Any(c=>c.Day==Day)&&p.Attempt?.Day!=Day)p.Attempt=new(){Day=Day,StartedAt=Now};return State(p);});
  public Task<object> Theory(string id,string day,string answer)=>Transaction(id,(p,_)=>{EnsureDay(day);if(p.Completions.Any(c=>c.Day==Day))return State(p);if(p.Attempt?.Day!=Day)throw new ArgumentException("Ξεκίνα πρώτα το challenge.");if(answer is not("true" or "false"))throw new ArgumentException("Μη έγκυρη επιλογή.");if((Now-p.Attempt.StartedAt).TotalSeconds>=600)throw new ArgumentException("Ο χρόνος τελείωσε. Υπόβαλε τις απαντήσεις σου.");p.Attempt.TheoryAnswer??=answer;return State(p);});
@@ -86,12 +104,14 @@ public sealed class GamificationService {
  EnsureDay(day);if(p.Completions.Any(c=>c.Day==Day))return State(p);if(p.Attempt?.Day!=Day)throw new ArgumentException("Ξεκίνα πρώτα το challenge.");if(answers.Count>8||answers.Any(a=>a.Key.Length>100||a.Value is null||a.Value.Length>200))throw new ArgumentException("Μη έγκυρες απαντήσεις.");
  var duration=Math.Max(0,(int)(Now-p.Attempt.StartedAt).TotalSeconds);
  if(duration>605)answers=[];
- answers[Pack["questions"]![0]!["id"]!.GetValue<string>()]=p.Attempt.TheoryAnswer??"";
+ var theoryId=Pack["questions"]![0]!["id"]!.GetValue<string>();
+ var submittedTheory=answers.GetValueOrDefault(theoryId,"");
+ answers[theoryId]=p.Attempt.TheoryAnswer??(submittedTheory is "true" or "false"?submittedTheory:"");
  var results=Enumerable.Range(0,3).Select(i=>Grade(i,answers)).ToList();var count=results.Count(f=>f.Correct);
  var c=new ChallengeCompletion{Day=Day,StartedAt=p.Attempt.StartedAt,CompletedAt=Now,DurationSeconds=duration,Answers=answers,Feedback=results,CorrectCount=count,LoopResults=Enumerable.Range(0,3).Where(i=>Pack["questions"]![i]!["tags"]!.AsArray().Any(t=>t!.GetValue<string>()=="loops")).Select(i=>results[i].Correct).ToList()};
  p.Completions.Add(c);c.Streak=store is null?Streak(p,Day):p.CurrentStreak+1;if(store is not null){p.CurrentStreak=c.Streak;p.LastActivityDate=Day;}c.Multiplier=Math.Min(2,1+Math.Floor(c.Streak/7d)*0.1);c.Xp=(int)Math.Floor((10+30*count+(duration<180?10*count:duration<600?5*count:0))*c.Multiplier+0.5);
  if(store is not null)p.TotalXP+=c.Xp;
- List<string> eligible=["first"];if(duration<180)eligible.Add("lightning");if(c.Streak>=30)eligible.Add("month");var loops=(store is null?p.Completions.SelectMany(c=>c.LoopResults):p.RecentLoops.Concat(c.LoopResults)).TakeLast(5).ToArray();if(store is not null)p.RecentLoops=loops.ToList();if(loops.Length==5&&loops.All(x=>x))eligible.Add("loops");if(count==3&&(Pack["id"]!.GetValue<string>() is "search" or "sort" || (Pack["id"]!.GetValue<string>().StartsWith("daily-",StringComparison.Ordinal) && Pack["questions"]!.AsArray().Any(q=>q!["tags"]!.AsArray().Any(t=>t!.GetValue<string>()=="search")))))eligible.Add("arrays");c.NewBadges=eligible.Where(b=>!p.Badges.Contains(b)).ToList();p.Badges.AddRange(c.NewBadges);return State(p);});
+ List<string> eligible=["first"];if(duration<180)eligible.Add("lightning");if(c.Streak>=30)eligible.Add("month");var loops=(store is null?p.Completions.SelectMany(c=>c.LoopResults):p.RecentLoops.Concat(c.LoopResults)).TakeLast(5).ToArray();if(store is not null)p.RecentLoops=loops.ToList();if(loops.Length==5&&loops.All(x=>x))eligible.Add("loops");if(count==3&&(Pack["id"]!.GetValue<string>() is "search" or "sort" || ((Pack["id"]!.GetValue<string>().StartsWith("daily-",StringComparison.Ordinal)||Pack["id"]!.GetValue<string>().StartsWith("challenge-day-",StringComparison.Ordinal)) && Pack["questions"]!.AsArray().Any(q=>q!["tags"]!.AsArray().Any(t=>t!.GetValue<string>()=="search")))))eligible.Add("arrays");c.NewBadges=eligible.Where(b=>!p.Badges.Contains(b)).ToList();p.Badges.AddRange(c.NewBadges);return State(p);});
  public Task<object> Study(string id,string lesson)=>Transaction(id,(p,_)=>{if(!System.Text.RegularExpressions.Regex.IsMatch(lesson,@"^lesson-(?:[1-9]|1[0-6]|5a|5b)$"))throw new ArgumentException("Μη έγκυρο μάθημα.");if(!p.Studies.Contains(Day))p.Studies.Add(Day);return State(p);});
  public Task<object> Freeze(string id)=>Transaction(id,(p,_)=>{if(p.Freezes.Contains(Day))return State(p);if(p.Completions.Any(c=>c.Day==Day)||(store is null?Streak(p,Day):p.CurrentStreak)==0||!p.Studies.Contains(Day)||p.Freezes.Any(d=>Week(d)==Week(Day)))throw new ArgumentException("Το freeze απαιτεί ενεργό σερί, μελέτη σήμερα και διαθέσιμη εβδομαδιαία χρήση.");p.Freezes.Add(Day);if(store is not null)p.LastActivityDate=Day;return State(p);});
  public Task<object> Update(string id,string username,string avatar,string group,string[] friends)=>Transaction(id,(p,all)=>{username=username.Trim();group=group.Trim().ToUpperInvariant();if(username.Length is <2 or >24||group.Length>30||friends.Length>30||!new[]{"🦉","🐢","🦊","🐱","🚀"}.Contains(avatar)||username.Any(char.IsControl)||group.Any(char.IsControl))throw new ArgumentException("Έλεγξε το ψευδώνυμο (2–24 χαρακτήρες), το avatar και την ομάδα.");if(store is null?friends.Any(f=>f!=p.PublicCode&&!all.Any(s=>s.PublicCode==f)):!store.ValidFriends(id,friends))throw new ArgumentException("Ο κωδικός φίλου δεν βρέθηκε.");p.Username=username;p.Avatar=avatar;p.Group=group;p.Friends=friends.Where(f=>f!=p.PublicCode).Distinct().ToList();return State(p);});

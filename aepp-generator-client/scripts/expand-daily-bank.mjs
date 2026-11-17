@@ -1,3 +1,4 @@
+import { importDailySeed } from './import-daily-seed.mjs'
 import { readFileSync, writeFileSync } from 'node:fs'
 
 // Authored theory and bounded exercise families; run explicitly when editing the bank.
@@ -127,5 +128,6 @@ const additions = theories.map(([topic,prompt,answer,explanation],index) => {
 bank.packs = [...original,...additions]
 // Old attempts and historical references retain their original date-to-pack mapping.
 bank.rotation = {startsOn:'2026-10-15',legacyPackCount:21,firstPackIndex:21}
+importDailySeed(bank)
 writeFileSync(path,JSON.stringify(bank,null,2)+'\n')
 console.log(`Wrote ${bank.packs.length} packs (${bank.packs.length*3} questions).`)

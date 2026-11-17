@@ -41,7 +41,7 @@
 .pattern-copy { display: flex; align-items: center; gap: 7px; font-size: .75rem; color: #0f766e; padding: 8px; }
 .pattern-copy:disabled { opacity: .5; }
 .pattern-code-label { color: var(--muted); margin: 14px 0 10px; }
-.pattern-code { white-space: pre; overflow: auto; background: #0f172a; color: var(--edge); padding: 22px; border-radius: 14px; font-family: Consolas, monospace; font-size: .86rem; line-height: 1.95; tab-size: 2; max-height: 640px; }
+.pattern-code { white-space: pre; overflow: auto; background: #0f172a; color: #ffffff; padding: 22px; border-radius: 14px; font-family: Consolas, monospace; font-size: .86rem; line-height: 1.95; tab-size: 2; max-height: 640px; }
 .pattern-notice { color: #0f766e; min-height: 24px; margin: 8px 0; }
 .pattern-setup { border: 1px solid var(--edge); border-radius: 12px; padding: 14px 18px; }
 .pattern-setup summary { font-size: .8rem; font-weight: 650; color: var(--muted); cursor: pointer; }

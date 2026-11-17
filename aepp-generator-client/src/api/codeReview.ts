@@ -10,7 +10,11 @@ export const CodeReviewResponseSchema = z.object({
 })
 export type CodeReviewResponse = z.infer<typeof CodeReviewResponseSchema>
 
-export async function reviewCode(studentCode: string, metrics: ExecutionMetrics,signal?:AbortSignal): Promise<CodeReviewResponse> {
-  const { data } = await apiClient.post<unknown>('/code-review', { studentCode, metrics },{signal})
+export async function reviewCode(
+  studentCode: string,
+  metrics: ExecutionMetrics,
+  signal?: AbortSignal,
+): Promise<CodeReviewResponse> {
+  const { data } = await apiClient.post<unknown>('/code-review', { studentCode, metrics }, { signal })
   return parseBoundary(CodeReviewResponseSchema, data)
 }

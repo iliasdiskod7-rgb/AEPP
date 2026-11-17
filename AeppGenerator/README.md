@@ -30,3 +30,15 @@ The SDK is pinned to 8.0.425 with latest-patch roll-forward. To recreate with .N
 Pinned package references: MediatR 12.5.0, FluentValidation.DependencyInjectionExtensions 11.11.0, Swashbuckle.AspNetCore 6.6.2.
 
 Verification: `dotnet run --project tests/AeppGenerator.Checks` builds the referenced backend projects and exercises exam generation, retry/fallback, validation, cancellation, and assessment insight behavior with a stubbed provider.
+
+## Resetting the local exam bank
+
+The destructive reset command is limited to Development and the default local
+`src/AeppGenerator.Api/App_Data/accounts.sqlite` database. It removes every exam,
+dependent attempt, answer submission, grade revision, and saved generated exam, then
+seeds the five authored practice exams from the embedded bank. Accounts and code notes are retained. Run it
+from this directory only when that history may be discarded:
+
+```powershell
+dotnet run --project src/AeppGenerator.Api --launch-profile http -- --reset-exams --confirm-reset-exams
+```

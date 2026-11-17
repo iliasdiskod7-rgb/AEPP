@@ -1,12 +1,4 @@
-import {
-  BookOpenCheck,
-  Braces,
-  FileQuestion,
-  LibraryBig,
-  PanelsTopLeft,
-  Workflow,
-  type LucideIcon,
-} from 'lucide-react'
+import { BookOpenCheck, Braces, FileQuestion, LibraryBig, PanelsTopLeft, Workflow, type LucideIcon } from 'lucide-react'
 import type { DashboardTab } from '../layout/DashboardLayout'
 
 export interface DashboardFeature {

@@ -1,19 +1,35 @@
+import { formatDiagnostic, toDiagnostic } from '../interpreter/diagnostics'
 import { parseProgram } from '../interpreter/parser'
 import { Interpreter, parseInput } from '../interpreter/runtime'
 import type { ExecutionMetrics } from '../interpreter/runtime'
 import type { ProgramTestCase } from './model'
 
-export interface ExecutionResult { output: string[]; inputsUsed: number; error?: string; executedLines?: number[]; executedSubprograms?: string[]; inputNames?: string[]; metrics: ExecutionMetrics }
+export interface ExecutionResult {
+  output: string[]
+  inputsUsed: number
+  error?: string
+  executedLines?: number[]
+  executedSubprograms?: string[]
+  inputNames?: string[]
+  metrics: ExecutionMetrics
+}
 const MAX_EVENTS = 120_000
 
 /** Εκτελείται σε Web Worker στη διεπαφή, ώστε ένας βρόχος να μην παγώνει τον επεξεργαστή. */
 export function executeSource(source: string, inputs: string[]): ExecutionResult {
   let used = 0
   const inputNames: string[] = []
-  const lines = new Set<number>(), scopes = new Set<string>()
+  const lines = new Set<number>(),
+    scopes = new Set<string>()
   let interpreter: Interpreter | undefined
-  const finish = (result: Omit<ExecutionResult, 'executedLines' | 'executedSubprograms' | 'inputNames' | 'metrics'>): ExecutionResult => ({
-    ...result, executedLines: [...lines], executedSubprograms: [...scopes], inputNames, metrics: interpreter?.metrics ?? { comparisonsCount: 0, assignmentsCount: 0, loopIterations: 0 },
+  const finish = (
+    result: Omit<ExecutionResult, 'executedLines' | 'executedSubprograms' | 'inputNames' | 'metrics'>,
+  ): ExecutionResult => ({
+    ...result,
+    executedLines: [...lines],
+    executedSubprograms: [...scopes],
+    inputNames,
+    metrics: interpreter?.metrics ?? { comparisonsCount: 0, assignmentsCount: 0, loopIterations: 0 },
   })
   try {
     interpreter = new Interpreter(parseProgram(source))
@@ -21,12 +37,26 @@ export function executeSource(source: string, inputs: string[]): ExecutionResult
     let next = iterator.next()
     let events = 0
     while (!next.done) {
-      if (++events > MAX_EVENTS) return finish({ output: [], inputsUsed: used, error: 'Ξεπεράστηκε το όριο βημάτων εκτέλεσης.' })
+      if (++events > MAX_EVENTS)
+        return finish({
+          output: [],
+          inputsUsed: used,
+          error: 'Λάθος κατά την εκτέλεση: Ξεπεράστηκε το όριο βημάτων εκτέλεσης.',
+        })
       const event = next.value
-      if (event.kind !== 'done') { lines.add(event.line); if (event.nodeExecution) lines.add(event.nodeExecution.originLine); if (event.scopeName) scopes.add(event.scopeName) }
+      if (event.kind !== 'done') {
+        lines.add(event.line)
+        if (event.nodeExecution) lines.add(event.nodeExecution.originLine)
+        if (event.scopeName) scopes.add(event.scopeName)
+      }
       if (event.kind === 'input') {
         inputNames.push(event.name)
-        if (used >= inputs.length) return finish({ output: event.output, inputsUsed: used, error: `Λείπει τιμή εισόδου για τη μεταβλητή ${event.name}.` })
+        if (used >= inputs.length)
+          return finish({
+            output: event.output,
+            inputsUsed: used,
+            error: `Λείπει τιμή εισόδου για τη μεταβλητή ${event.name}.`,
+          })
         const value = parseInput(inputs[used++], event.type, event.line)
         next = iterator.next(value)
       } else if (event.kind === 'done') return finish({ output: event.output, inputsUsed: used })
@@ -34,7 +64,7 @@ export function executeSource(source: string, inputs: string[]): ExecutionResult
     }
     return finish({ output: [], inputsUsed: used })
   } catch (cause) {
-    return finish({ output: [], inputsUsed: used, error: cause instanceof Error ? cause.message : 'Άγνωστο σφάλμα εκτέλεσης.' })
+    return finish({ output: [], inputsUsed: used, error: formatDiagnostic(toDiagnostic(cause)) })
   }
 }
 
@@ -42,14 +72,21 @@ const comparable = (text: string) => text.trim().replace(/\s+/gu, ' ')
 export function runTestCases(source: string, cases: ProgramTestCase[]) {
   return cases.map(test => {
     const result = executeSource(source, test.inputs)
-    const passed = !result.error && result.inputsUsed === test.inputs.length &&
+    const passed =
+      !result.error &&
+      result.inputsUsed === test.inputs.length &&
       result.output.length === test.expectedOutput.length &&
       result.output.every((line, index) => comparable(line) === comparable(test.expectedOutput[index]))
     return {
-      id: test.id, passed, actual: result.output,
-      executedLines: result.executedLines, executedSubprograms: result.executedSubprograms,
+      id: test.id,
+      passed,
+      actual: result.output,
+      executedLines: result.executedLines,
+      executedSubprograms: result.executedSubprograms,
       metrics: result.metrics,
-      error: result.error ?? (result.inputsUsed !== test.inputs.length ? 'Το πρόγραμμα δεν κατανάλωσε όλα τα δεδομένα εισόδου.' : undefined),
+      error:
+        result.error ??
+        (result.inputsUsed !== test.inputs.length ? 'Το πρόγραμμα δεν κατανάλωσε όλα τα δεδομένα εισόδου.' : undefined),
     }
   })
 }

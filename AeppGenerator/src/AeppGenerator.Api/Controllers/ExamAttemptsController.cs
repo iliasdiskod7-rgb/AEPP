@@ -9,17 +9,19 @@ namespace AeppGenerator.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/exams/attempts")]
-public sealed class ExamAttemptsController(ExamAttemptService attempts) : ControllerBase
+public sealed class ExamAttemptsController(ExamAttemptService attempts, ExamCatalog catalog, AeppGenerator.Api.Data.AssessmentDbContext db) : ControllerBase
 {
     /// <summary>Returns one bank exam with answer keys and hidden test inputs withheld.</summary>
     [HttpGet("/api/exams/random")]
     [ProducesResponseType(typeof(RandomExamResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RandomExamResponse>> Random(CancellationToken ct)
-    {
-        var exam = await attempts.GetRandomPracticeExam(ct);
-        return exam is null ? NotFound() : Ok(exam);
-    }
+    public Task<IActionResult> Random(CancellationToken ct, [FromQuery] string? excludeId = null)=>Execute(async()=> {
+        var exam=await catalog.GetRandomPracticeExam(db, ct, excludeId);
+        return exam is null?NotFound(new{message="Δεν βρέθηκε διαθέσιμο διαγώνισμα. Δοκίμασε ξανά."}):Ok(exam);
+    });
+
+    [HttpGet("/api/exams")]
+    public Task<IActionResult> List(CancellationToken ct) => Execute(async () => Ok(await catalog.ListPracticeExams(db, ct)));
 
     [HttpPost("start")]
     [RequestSizeLimit(1000000)]
@@ -35,20 +37,9 @@ public sealed class ExamAttemptsController(ExamAttemptService attempts) : Contro
     public Task<IActionResult> MyHistory(CancellationToken ct, int page = 1, int pageSize = 20) =>
         Execute(async () => Ok(await attempts.History(AuthService.UserId(User), false, page, pageSize, ct)));
 
-    [HttpGet("review-history")]
-    [Authorize(Roles = "TEACHER")]
-    public Task<IActionResult> ReviewHistory(CancellationToken ct, int page = 1, int pageSize = 20) =>
-        Execute(async () => Ok(await attempts.History(AuthService.UserId(User), true, page, pageSize, ct)));
-
     [HttpGet("{attemptId:guid}")]
     public Task<IActionResult> Get(Guid attemptId, CancellationToken ct) =>
-        Execute(async () => Ok(await attempts.Get(attemptId, AuthService.UserId(User), User.IsInRole("TEACHER"), ct)));
-
-    [HttpPost("{attemptId:guid}/grade")]
-    [RequestSizeLimit(20000)]
-    [Authorize(Roles = "TEACHER")]
-    public Task<IActionResult> Grade(Guid attemptId, GradeAttemptRequest request, CancellationToken ct) =>
-        Execute(async () => Ok(await attempts.Grade(AuthService.UserId(User), attemptId, request, ct)));
+        Execute(async () => Ok(await attempts.Get(attemptId, AuthService.UserId(User), false, ct)));
 
     private async Task<IActionResult> Execute(Func<Task<IActionResult>> action)
     {
@@ -57,6 +48,8 @@ public sealed class ExamAttemptsController(ExamAttemptService attempts) : Contro
         catch (AttemptConflictException error) { return Conflict(new { message = error.Message }); }
         catch (JsonException) { return BadRequest(new { message = "Μη έγκυρη δομή JSON στην υποβολή." }); }
         catch (ArgumentException error) { return BadRequest(new { message = error.Message }); }
+        catch (GradingUnavailableException error) { return StatusCode(503,new {message=error.Message}); }
+        catch (Microsoft.Data.Sqlite.SqliteException) { return StatusCode(503,new {message="Η αποθήκευση δεν είναι διαθέσιμη. Οι απαντήσεις σου διατηρούνται. Δοκίμασε ξανά."}); }
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 }

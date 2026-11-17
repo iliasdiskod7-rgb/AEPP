@@ -8,14 +8,16 @@ const {Interpreter}=await server.ssrLoadModule('/src/interpreter/runtime.ts')
 const {parseProgram}=await server.ssrLoadModule('/src/interpreter/parser.ts')
 after(()=>server.close())
 const bank=JSON.parse(await readFile(new URL('../src/gamification/challenge-bank.json',import.meta.url),'utf8'))
-test('100 packs preserve old attempts and start new content at cutover',()=>{
- assert.equal(bank.packs.length,100)
+test('115 packs preserve old attempts and start new content at cutover',()=>{
+ assert.equal(bank.packs.length,115)
  for(const day of ['2026-01-01','2026-10-08','2026-10-14']) assert.equal(e.packAt(day).id,bank.packs[((e.dayNumber(day)%21)+21)%21].id)
  assert.equal(e.packAt('2026-10-15').id,'daily-022')
- assert.equal(e.packAt('2027-01-23').id,'daily-022')
- assert.equal(new Set(bank.packs.map(p=>p.id)).size,100)
- assert.equal(new Set(bank.packs.flatMap(p=>p.questions.map(q=>q.id))).size,300)
- assert.equal(new Set(bank.packs.slice(21).map(p=>p.questions[0].prompt)).size,79)
+ assert.equal(e.packAt('2026-10-16').id,'challenge-day-01')
+ assert.equal(e.packAt('2026-10-30').id,'challenge-day-15')
+ assert.equal(e.packAt('2027-02-08').id,'challenge-day-01')
+ assert.equal(new Set(bank.packs.map(p=>p.id)).size,115)
+ assert.equal(new Set(bank.packs.flatMap(p=>p.questions.map(q=>q.id))).size,345)
+ assert.equal(new Set(bank.packs.slice(21,100).map(p=>p.questions[0].prompt)).size,79)
 })
 function executeQuestion(q,code) {
  const declarations=q.declarations.split('.')[0].replace(/^Ακέραι(?:ες|α) /,'ΑΚΕΡΑΙΕΣ: ')
@@ -26,7 +28,7 @@ function executeQuestion(q,code) {
  if(!step.done)throw Error('Η εκτέλεση δεν τερματίστηκε')
  return output
 }
-test('all 79 new filled exercises execute correctly; every distractor fails the stated goal',()=>{
+test('all generated and curated filled exercises execute correctly; every distractor fails the stated goal',()=>{
  for(const pack of bank.packs.slice(21)) {
   const q=pack.questions[1],b=q.blanks[0]
   assert.equal(new Set(b.options).size,b.options.length,pack.id)
@@ -44,8 +46,8 @@ function answers(day){return Object.fromEntries(e.packAt(day).questions.flatMap(
 function finish(p,day,duration=120){const now=time(day),a=answers(day);e.start(p,now);e.answerTheory(p,e.packAt(day).questions[0].answer,now);return e.complete(p,a,new Date(+now+duration*1000))}
 test('new search variants also award the array achievement',()=>{
  const p=e.newProfile()
- assert.equal(e.packAt('2026-10-27').questions[2].tags.includes('search'),true)
- finish(p,'2026-10-27')
+ assert.equal(e.packAt('2026-12-03').questions[2].tags.includes('search'),true)
+ finish(p,'2026-12-03')
  assert.equal(p.badges.includes('arrays'),true)
 })
 test('Athens midnight and summer/winter timezone',()=>{assert.equal(e.dayAt(new Date('2026-10-07T20:59:59Z')),'2026-10-07');assert.equal(e.dayAt(new Date('2026-10-07T21:00:00Z')),'2026-10-08');assert.equal(e.dayAt(new Date('2026-12-01T22:00:00Z')),'2026-12-02')})
@@ -66,3 +68,26 @@ test('leaderboard uses real records and excludes others from group/friends',()=>
 test('weekly ranking excludes previous week XP',()=>{const p=e.newProfile();finish(p,'2026-10-04');finish(p,'2026-10-05');const r=e.leaderboard([p],p,'weekly','national',time('2026-10-06'))[0];assert.equal(r.totalXp,260);assert.equal(r.rankingXp,130)})
 
 test('all trace answers execute correctly in the project interpreter',()=>{for(const p of bank.packs){const q=p.questions[2];let decl=q.declarations.split('.')[0].replace(/^Ακέραι(?:ες|α) /,'ΑΚΕΡΑΙΕΣ: '),init=(q.verification?.initialization??'')+'\n';if(['arrays','search','design'].includes(p.id))init='Α[1] <- 2\nΑ[2] <- 5\nΑ[3] <- 2\nΑ[4] <- 2\n';if(p.id==='sort')init='Α[1] <- 7\nΑ[2] <- 3\n';if(p.id==='queue')init='ΟΥ[1] <- 4\nΟΥ[2] <- 8\nΟΥ[3] <- 12\n';const source='ΠΡΟΓΡΑΜΜΑ Έλεγχος\nΜΕΤΑΒΛΗΤΕΣ\n'+decl+'\nΑΡΧΗ\n'+init+q.code+'\nΤΕΛΟΣ_ΠΡΟΓΡΑΜΜΑΤΟΣ';const iterator=new Interpreter(parseProgram(source)).execute();let step=iterator.next(),output=[];for(let n=0;!step.done&&n<1000;n++){output=step.value.output;step=iterator.next()}assert.ok(step.done,p.id+' must terminate');assert.deepEqual(output,[q.answer],p.id+' output')}})
+
+const seed=JSON.parse(await readFile(new URL('../src/gamification/dailyChallengesSeed.json',import.meta.url),'utf8'))
+test('authored seed has 15 complete sets, textbook paragraphs and valid typed answers',()=>{
+ assert.equal(seed.length,15)
+ assert.deepEqual([0,1,2].map(position=>seed.filter(p=>p.questions[1].options.indexOf(p.questions[1].correctAnswer)===position).length),[5,5,5])
+ assert.equal(new Set(seed.map(p=>p.id)).size,15)
+ for(const [i,p] of seed.entries()){
+  assert.equal(p.dayIndex,i+1)
+  assert.deepEqual(p.questions.map(q=>q.type),['TRUE_FALSE','FILL_BLANK','TRACE_OUTPUT'])
+  assert.deepEqual(p.questions.map(q=>q.id),['q1','q2','q3'])
+  assert.equal(typeof p.questions[0].correctAnswer,'boolean')
+  assert.ok(p.questions[1].options.includes(p.questions[1].correctAnswer))
+  for(const q of p.questions){
+   assert.match(q.explanation,/Σχολικό βιβλίο, §[23789]|Σχολικό βιβλίο, §10/)
+   assert.ok(q.reference.url.startsWith('https://www.ebooks.edu.gr/'))
+   const mapped=bank.packs.find(b=>b.id===p.id).questions.find(b=>b.id===p.id+'-'+q.id)
+   assert.equal(mapped.explanation,q.explanation)
+   assert.equal(mapped.answer,q.type==='FILL_BLANK'?'':String(q.correctAnswer))
+  }
+  assert.equal((p.questions[1].codeSnippet.match(/\[BLANK\]/g)??[]).length,1)
+  assert.ok(p.questions[2].codeSnippet.split('\n').length>=5&&p.questions[2].codeSnippet.split('\n').length<=8)
+ }
+})

@@ -104,7 +104,7 @@
       "properties": {
         "code": {
           "type": "string",
-          "pattern": "^[ΑΒΓΔ][1-9][0-9]*$"
+          "pattern": "^[ΑΒΓΔ][1-9][0-9]*[α-ω]?$"
         },
         "questionText": {
           "type": "string",

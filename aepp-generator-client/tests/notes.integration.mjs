@@ -6,12 +6,13 @@ import {tmpdir} from 'node:os'
 import path from 'node:path'
 import net from 'node:net'
 import {randomBytes} from 'node:crypto'
+import {DatabaseSync} from 'node:sqlite'
 const fixture=await mkdtemp(path.join(tmpdir(),'aepp-notes-http-')),database=path.join(fixture,'accounts.sqlite')
 const api=path.resolve('../AeppGenerator/src/AeppGenerator.Api')
 const dll=process.env.AEPP_NOTES_API_DLL??path.join(api,'bin/Release/net8.0/AeppGenerator.Api.dll')
 const listener=net.createServer();await new Promise(r=>listener.listen(0,'127.0.0.1',r));const port=listener.address().port;await new Promise(r=>listener.close(r))
 const base=`http://127.0.0.1:${port}/api`;let child,logs=''
-async function start(){logs='';child=spawn('dotnet',[dll,'--urls',`http://127.0.0.1:${port}`],{cwd:api,env:{...process.env,ASPNETCORE_ENVIRONMENT:'Development',Accounts__DatabasePath:database,Auth__SigningKey:key},windowsHide:true,stdio:['ignore','pipe','pipe']});child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);for(let i=0;i<160;i++){if(child.exitCode!==null)throw Error(logs);try{if((await fetch(base+'/health')).ok)return}catch{}await new Promise(r=>setTimeout(r,250))}throw Error('Startup timeout: '+logs)}
+async function start(){logs='';child=spawn('dotnet',[dll,'--urls',`http://127.0.0.1:${port}`],{cwd:api,env:{...process.env,ASPNETCORE_ENVIRONMENT:'Development',Accounts__DatabasePath:database,Auth__SigningKey:key,Logging__EventLog__LogLevel__Default:"None",Logging__LogLevel__Default:"Warning"},windowsHide:true,stdio:['ignore','pipe','pipe']});child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);for(let i=0;i<160;i++){if(child.exitCode!==null)throw Error(logs);try{if((await fetch(base+'/health')).ok)return}catch{}await new Promise(r=>setTimeout(r,250))}throw Error('Startup timeout: '+logs)}
 async function stop(){if(child&&child.exitCode===null){const exit=new Promise(r=>child.once('exit',r));child.kill();await exit}}
 const key=randomBytes(32).toString('base64')
 after(async()=>{await stop();for(const suffix of ['','-wal','-shm'])await unlink(database+suffix).catch(()=>{});await rmdir(fixture).catch(()=>{})})
@@ -42,6 +43,44 @@ await test('ιδιωτικές σημειώσεις, ενημέρωση και �
   assert.equal((await request('/notes',{method:'POST',token:first.token,body:{...body,code:'x'.repeat(100001)}})).status,400)
   assert.equal((await request('/notes/'+other.data.id,{method:'DELETE',token:first.token})).status,204)
  })
+
+ await t.test('migration διατηρεί παλιά σημείωση και την αφήνει ιδιωτική',async()=>{
+  await stop()
+  const oldDb=new DatabaseSync(database)
+  try{oldDb.exec("DROP INDEX IX_CodeNotes_ShareToken; ALTER TABLE CodeNotes DROP COLUMN ShareToken; ALTER TABLE CodeNotes DROP COLUMN IsPublic; DELETE FROM __EFMigrationsHistory WHERE MigrationId = '202610150001_AddNoteSharing';")}finally{oldDb.close()}
+  await start()
+  const migrated=await request('/notes/'+note.id,{token:first.token})
+  assert.equal(migrated.status,200);assert.equal(migrated.data.code,code);assert.equal(migrated.data.isPublic,false)
+ })
  await t.test('επανεκκίνηση διατηρεί τη σημείωση και τα δικαιώματα',async()=>{await stop();await start();assert.equal((await request('/notes/'+note.id,{token:first.token})).data.title,'Νέος τίτλος');assert.equal((await request('/notes/'+note.id,{token:second.token})).status,404)})
- await t.test('διαγραφή ιδιοκτήτη αφαιρεί μόνο τη δική του σημείωση',async()=>{assert.equal((await request('/notes/'+note.id,{method:'DELETE',token:first.token})).status,204);assert.equal((await request('/notes/'+note.id,{token:first.token})).status,404)})
+
+ await t.test('κοινή χρήση μόνο από ιδιοκτήτη και σταθερό token σε παράλληλα αιτήματα',async()=>{
+  assert.equal((await request('/notes/'+note.id,{token:first.token})).data.isPublic,false)
+  assert.equal((await request('/notes/'+note.id+'/share',{method:'POST'})).status,401)
+  assert.equal((await request('/notes/'+note.id+'/share',{method:'POST',token:second.token})).status,404)
+  const results=await Promise.all([request('/notes/'+note.id+'/share',{method:'POST',token:first.token}),request('/notes/'+note.id+'/share',{method:'POST',token:first.token})])
+  assert.ok(results.every(r=>r.status===200));assert.equal(results[0].data.url,results[1].data.url)
+  note.shareUrl=results[0].data.url;note.shareToken=new URL(note.shareUrl).pathname.split('/').pop()
+  assert.match(note.shareToken,/^[a-f0-9]{32}$/)
+  const publicNote=await request('/notes/shared/'+note.shareToken)
+  assert.equal(publicNote.status,200);assert.equal(publicNote.data.code,code);assert.equal(publicNote.data.authorName,'Δοκιμαστικός μαθητής')
+  for(const key of ['userId','email','id','shareToken','isPublic'])assert.equal(key in publicNote.data,false)
+  assert.equal((await request('/notes/shared/not-a-token')).status,404)
+ })
+ await t.test('ο σύνδεσμος επιβιώνει επανεκκίνηση και η αντιγραφή είναι νέα ιδιωτική σημείωση',async()=>{
+  await stop();await start()
+  const publicNote=(await request('/notes/shared/'+note.shareToken)).data
+  const fork=await request('/notes',{method:'POST',token:second.token,body:publicNote})
+  assert.equal(fork.status,201);assert.notEqual(fork.data.id,note.id);assert.equal(fork.data.isPublic,false);assert.equal(fork.data.code,code)
+  assert.equal((await request('/notes/'+fork.data.id,{token:first.token})).status,404)
+  assert.equal((await request('/notes/'+fork.data.id,{method:'DELETE',token:second.token})).status,204)
+ })
+ await t.test('διακοπή κοινής χρήσης ακυρώνει παλιό σύνδεσμο και νέα κοινή χρήση δίνει νέο token',async()=>{
+  assert.equal((await request('/notes/'+note.id+'/share',{method:'DELETE',token:second.token})).status,404)
+  assert.equal((await request('/notes/'+note.id+'/share',{method:'DELETE',token:first.token})).status,204)
+  assert.equal((await request('/notes/shared/'+note.shareToken)).status,404)
+  const again=await request('/notes/'+note.id+'/share',{method:'POST',token:first.token})
+  assert.notEqual(again.data.url,note.shareUrl);note.shareToken=new URL(again.data.url).pathname.split('/').pop()
+ })
+ await t.test('διαγραφή ιδιοκτήτη αφαιρεί μόνο τη δική του σημείωση',async()=>{assert.equal((await request('/notes/'+note.id,{method:'DELETE',token:first.token})).status,204);assert.equal((await request('/notes/'+note.id,{token:first.token})).status,404);assert.equal((await request('/notes/shared/'+note.shareToken)).status,404)})
 })

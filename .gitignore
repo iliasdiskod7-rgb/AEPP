@@ -30,3 +30,10 @@
 
 # Μόνιμη μαθητική πρόοδος (τοπικά δεδομένα)
 **/App_Data/
+
+# Προσωρινά/τοπικά αρχεία εργαλείων και builds
+**/.tmp/
+**/.playwright-mcp/
+**/.impeccable/
+.vscode/
+**/*.tsbuildinfo

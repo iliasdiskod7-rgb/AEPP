@@ -12,6 +12,8 @@ public sealed class CodeNote
     public string Title { get; set; } = "";
     public string Code { get; set; } = "";
     public string? Comment { get; set; }
+    public bool IsPublic { get; set; }
+    public string? ShareToken { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
@@ -26,6 +28,9 @@ internal static class CodeNoteModel
             entity.HasKey(note => note.Id);
             entity.Property(note => note.Title).IsRequired().HasMaxLength(200);
             entity.Property(note => note.Code).IsRequired().HasMaxLength(100000);
+            entity.Property(note => note.IsPublic).HasDefaultValue(false);
+            entity.Property(note => note.ShareToken).HasMaxLength(32);
+            entity.HasIndex(note => note.ShareToken).IsUnique().HasFilter("\"ShareToken\" IS NOT NULL");
             entity.Property(note => note.Comment).HasMaxLength(5000);
             entity.Property(note => note.CreatedAt).HasConversion(utc);
             entity.Property(note => note.UpdatedAt).HasConversion(utc).IsConcurrencyToken();

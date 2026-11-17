@@ -1,0 +1,48 @@
+name: aepp-staging
+services:
+  api:
+    build:
+      context: .
+      target: api
+    restart: unless-stopped
+    environment:
+      Auth__SigningKey: ${AUTH_SIGNING_KEY:?Set AUTH_SIGNING_KEY in .env}
+      Auth__FrontendOrigins: https://${SITE_DOMAIN:?Set SITE_DOMAIN in .env}
+      AllowedHosts: ${SITE_DOMAIN}
+      Accounts__DatabasePath: /app/App_Data/accounts.sqlite
+      Gamification__StorePath: /app/App_Data/gamification.json
+      ReverseProxy__KnownProxy: 172.29.80.2
+    volumes:
+      - app_data:/app/App_Data
+    networks:
+      - app
+  web:
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      app:
+        ipv4_address: 172.29.80.2
+networks:
+  app:
+    ipam:
+      config:
+        - subnet: 172.29.80.0/24
+volumes:
+  app_data:
+  caddy_data:
+  caddy_config:

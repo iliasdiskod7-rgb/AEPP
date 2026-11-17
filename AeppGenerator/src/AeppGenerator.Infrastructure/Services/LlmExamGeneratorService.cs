@@ -112,7 +112,7 @@ public sealed class LlmExamGeneratorService(
             foreach (var question in section.Questions)
             {
                 if (question is null || string.IsNullOrWhiteSpace(question.Code) ||
-                    !Regex.IsMatch(question.Code, $"^{section.Theme[^1]}[1-9][0-9]*$", RegexOptions.CultureInvariant) ||
+                    !Regex.IsMatch(question.Code, $"^{section.Theme[^1]}[1-9][0-9]*[α-ω]?$", RegexOptions.CultureInvariant) ||
                     !codes.Add(question.Code) || string.IsNullOrWhiteSpace(question.QuestionText) ||
                     string.IsNullOrWhiteSpace(question.SolutionText) || question.Marks is < 1 or > 100)
                     throw new InvalidDataException("Μη έγκυρος κωδικός, εκφώνηση, λύση ή μονάδες ερωτήματος.");

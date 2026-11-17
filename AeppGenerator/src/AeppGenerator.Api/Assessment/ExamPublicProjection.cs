@@ -41,6 +41,7 @@ public static class ExamPublicProjection
                     question["referenceCode"] = "";
                     question["gradingMode"] = "review";
                     question["testCases"] = new JsonArray();
+                    // Public examples are authored per question; never substitute unrelated inputs.
                     break;
             }
         }

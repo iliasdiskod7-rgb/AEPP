@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss()],
     build: { emptyOutDir: true },
+    cacheDir: '.vite',
     server: {
       proxy: {
         '/api': { target: env.API_PROXY_TARGET || 'http://localhost:5210', changeOrigin: true },
