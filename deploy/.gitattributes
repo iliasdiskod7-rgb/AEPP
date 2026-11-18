@@ -1,0 +1,2 @@
+# Τα scripts εκτελούνται σε Linux: πάντα LF, ακόμη κι αν γίνει checkout σε Windows.
+*.sh text eol=lf

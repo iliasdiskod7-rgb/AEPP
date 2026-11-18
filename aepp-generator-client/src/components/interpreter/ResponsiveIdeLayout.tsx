@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import useWorkspacePreferences from './useWorkspacePreferences'
 import ResizeHandle from './ResizeHandle'
-import { clampSize, defaults, shortcutAction } from './workspaceState'
+import { clampSize, defaults, shortcutAction, sideTabs, type LiveTab, type SideTab } from './workspaceState'
 import './responsive-ide.css'
+const sideTabLabel: Record<SideTab, string> = {
+  commands: 'Εντολές',
+  memory: 'Μνήμη',
+  trace: 'Πίνακας τιμών',
+  debug: 'Debugger',
+}
 interface Props {
   editor: ReactNode
   commands: ReactNode
   console: ReactNode
-  memory: ReactNode
+  /** Η οπτικοποίηση της εκτέλεσης για την καρτέλα που επέλεξε ο μαθητής. Αποδίδεται μόνο όταν ανοίξει. */
+  memory: (tab: LiveTab) => ReactNode
   controls: ReactNode
   status: string
   cursor: { line: number; column: number }
@@ -56,17 +63,16 @@ export default function ResponsiveIdeLayout({
   const [size, setSize] = useState({ width: 1200, height: 600 })
   const [mobilePanel, setMobilePanel] = useState<'commands' | 'dock' | null>(null)
   const [memoryVisited, setMemoryVisited] = useState(false)
-  const [sideTool, setSideTool] = useState<'commands' | 'memory'>(p.tab === 'memory' ? 'memory' : 'commands')
-  const [memoryOpen, setMemoryOpen] = useState(p.tab === 'memory' && ['open', 'maximized'].includes(p.dock))
   const root = useRef<HTMLElement>(null),
     main = useRef<HTMLDivElement>(null),
     commandsDialog = useRef<HTMLDialogElement>(null),
     dockDialog = useRef<HTMLDialogElement>(null)
   const compact = size.width < 960
-  const memoryVisible = active && !zen && sideTool === 'memory' && memoryOpen
+  const liveTab: LiveTab = p.sideTab === 'commands' ? 'memory' : p.sideTab
+  const memoryVisible = active && !zen && p.commands !== 'hidden' && p.sideTab !== 'commands'
   const commandsVisible =
     memoryVisible ||
-    (active && !zen && sideTool === 'commands' && p.commands !== 'hidden' && (!compact || mobilePanel === 'commands'))
+    (active && !zen && p.sideTab === 'commands' && p.commands !== 'hidden' && (!compact || mobilePanel === 'commands'))
   const dockVisible =
     active && !zen && ['open', 'maximized'].includes(p.dock) && (memoryVisible || !compact || mobilePanel === 'dock')
   const width = clampSize(p.width, 220, Math.min(480, size.width - 420))
@@ -96,12 +102,18 @@ export default function ResponsiveIdeLayout({
   }, [memoryVisible])
   useEffect(() => {
     if (!executionRequest) return
-    setSideTool('memory')
-    setMemoryOpen(true)
+    // Με την εκτέλεση το πλαϊνό πάνελ δείχνει τη μνήμη (ή όποια καρτέλα οπτικοποίησης ήταν ανοιχτή)
+    // και η κονσόλα μένει ανοιχτή για ΓΡΑΨΕ/ΔΙΑΒΑΣΕ.
     setMemoryVisited(true)
     setZen(false)
     setMobilePanel(null)
-    setP(previous => ({ ...previous, dock: 'minimized', tab: 'console' }))
+    setP(previous => ({
+      ...previous,
+      commands: 'open',
+      sideTab: previous.sideTab === 'commands' ? 'memory' : previous.sideTab,
+      dock: 'open',
+      tab: 'console',
+    }))
   }, [executionRequest, setP])
   useEffect(() => {
     const hasNewOutput = outputCount > previousOutputCount.current
@@ -136,17 +148,23 @@ export default function ResponsiveIdeLayout({
     }
   }, [zen, onFocusEditor])
   function toggleCommands() {
-    setSideTool('commands')
-    setP(previous => ({
-      ...previous,
-      commands: previous.commands === 'open' && (!compact || mobilePanel === 'commands') ? 'hidden' : 'open',
-    }))
-    setMobilePanel(mobilePanel === 'commands' ? null : 'commands')
+    const showing = p.commands === 'open' && p.sideTab === 'commands' && (!compact || mobilePanel === 'commands')
+    setP(previous => ({ ...previous, sideTab: 'commands', commands: showing ? 'hidden' : 'open' }))
+    setMobilePanel(showing ? null : 'commands')
+  }
+  function selectSideTab(tab: SideTab) {
+    if (tab !== 'commands') setMemoryVisited(true)
+    setP(previous => ({ ...previous, sideTab: tab, commands: 'open' }))
   }
   function openDock(tab: 'console' | 'memory') {
     if (tab === 'memory') {
-      setSideTool('memory')
-      setMemoryOpen(previous => (sideTool === 'memory' ? !previous : true))
+      const showing = memoryVisible
+      if (!showing) setMemoryVisited(true)
+      setP(previous => ({
+        ...previous,
+        commands: showing ? 'hidden' : 'open',
+        sideTab: showing || previous.sideTab !== 'commands' ? previous.sideTab : 'memory',
+      }))
       setMobilePanel(null)
       return
     }
@@ -293,9 +311,38 @@ export default function ResponsiveIdeLayout({
               ×
             </button>
           </div>
-          <div className="ide-command-content" hidden={memoryVisible || (p.commands === 'rail' && !compact)}>
+          <div className="ide-command-content" hidden={!memoryVisible && p.commands === 'rail' && !compact}>
             <div className="ide-panel-heading">
-              <strong>Εντολές</strong>
+              <div className="ide-dock-tabs ide-side-tabs" role="tablist" aria-label="Πλαϊνό πάνελ">
+                {sideTabs.map(tab => (
+                  <button
+                    key={tab}
+                    id={'ide-side-tab-' + tab}
+                    type="button"
+                    role="tab"
+                    tabIndex={p.sideTab === tab ? 0 : -1}
+                    aria-selected={p.sideTab === tab}
+                    aria-controls={tab === 'commands' ? 'ide-side-commands' : 'ide-side-live'}
+                    onKeyDown={e => {
+                      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+                      e.preventDefault()
+                      const index = sideTabs.indexOf(tab)
+                      const next =
+                        e.key === 'Home'
+                          ? sideTabs[0]
+                          : e.key === 'End'
+                            ? sideTabs[sideTabs.length - 1]
+                            : sideTabs[(index + (e.key === 'ArrowRight' ? 1 : sideTabs.length - 1)) % sideTabs.length]
+                      selectSideTab(next)
+                      document.getElementById('ide-side-tab-' + next)?.focus()
+                    }}
+                    title={tab === 'debug' ? 'Αποσφαλμάτωση: σημεία διακοπής και στοίβα κλήσεων' : undefined}
+                    onClick={() => selectSideTab(tab)}
+                  >
+                    {sideTabLabel[tab]}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
                 title="Μεταφορά sidebar στην άλλη πλευρά"
@@ -306,6 +353,7 @@ export default function ResponsiveIdeLayout({
               <button
                 type="button"
                 title="Σύμπτυξη σε εικονίδια"
+                hidden={p.sideTab !== 'commands'}
                 onClick={() => {
                   setP(previous => ({ ...previous, commands: 'rail' }))
                   setMobilePanel(null)
@@ -315,7 +363,7 @@ export default function ResponsiveIdeLayout({
               </button>
               <button
                 type="button"
-                title="Απόκρυψη εντολών"
+                title="Απόκρυψη πλαϊνού πάνελ"
                 onClick={() => {
                   commandsDialog.current?.close()
                   setP(previous => ({ ...previous, commands: 'hidden' }))
@@ -326,16 +374,24 @@ export default function ResponsiveIdeLayout({
                 ×
               </button>
             </div>
-            <div className="ide-command-body">{commands}</div>
-          </div>
-          <div className="ide-memory-side-content" hidden={!memoryVisible}>
-            <div className="ide-panel-heading">
-              <strong>Μνήμη & Πίνακες</strong>
-              <button type="button" title="Απόκρυψη οπτικοποίησης" onClick={() => setMemoryOpen(false)}>
-                ×
-              </button>
+            <div
+              id="ide-side-commands"
+              role="tabpanel"
+              aria-labelledby="ide-side-tab-commands"
+              className="ide-command-body"
+              hidden={p.sideTab !== 'commands'}
+            >
+              {commands}
             </div>
-            <div className="ide-memory-side-body">{memoryVisited ? memory : null}</div>
+            <div
+              id="ide-side-live"
+              role="tabpanel"
+              aria-labelledby={'ide-side-tab-' + liveTab}
+              className="ide-memory-side-body"
+              hidden={p.sideTab === 'commands'}
+            >
+              {memoryVisited ? memory(liveTab) : null}
+            </div>
           </div>
         </dialog>
         {commandsVisible && !compact && (memoryVisible || p.commands === 'open') && !zen && (

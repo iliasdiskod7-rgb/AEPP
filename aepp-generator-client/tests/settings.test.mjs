@@ -26,7 +26,7 @@ test('theme switching and reset synchronize root class, data attributes and nati
  assert.equal(root.dataset.density,'comfortable')
  assert.equal(root.style.colorScheme,'light')
 })
-test('storage corruption, absent data and future versions safely restore defaults',()=>{for(const raw of [null,'','null','{broken','[]','{"version":2}'])assert.deepEqual(restoreSettings(raw),defaultSettings)})
+test('storage corruption, absent data and future versions safely restore defaults',()=>{for(const raw of [null,'','null','{broken','[]','{"version":3}'])assert.deepEqual(restoreSettings(raw),defaultSettings)})
 test('settings restore valid choices and reject invalid enums, types and unsafe limits',()=>{assert.deepEqual(restoreSettings(JSON.stringify({version:1,settings:defaultSettings})),defaultSettings);const s=sanitizeSettings({fontSize:99,executionDelay:-1,loopLimit:Infinity,tabSize:3,voiceRate:2,sounds:'true',theme:'dark',editorTheme:'monokai',wordWrap:true});assert.equal(s.fontSize,24);assert.equal(s.executionDelay,100);assert.equal(s.loopLimit,100000);assert.equal(s.tabSize,2);assert.equal(s.voiceRate,1);assert.equal(s.sounds,false);assert.equal(s.theme,'dark');assert.equal(s.editorTheme,'monokai');assert.equal(s.wordWrap,true)})
 test('light mode overrides every saved dark palette without losing the dark preference',()=>{
  for(const editorTheme of ['dark-default','monokai','vscode','contrast']) {
@@ -43,3 +43,11 @@ test('global theme tokens cover readable light and dark surfaces',async()=>{cons
 const program=parseProgram('ΠΡΟΓΡΑΜΜΑ Όριο\nΜΕΤΑΒΛΗΤΕΣ\n ΑΚΕΡΑΙΕΣ: i\nΑΡΧΗ\n i <- 0\n ΟΣΟ i >= 0 ΕΠΑΝΑΛΑΒΕ\n i <- i + 1\n ΤΕΛΟΣ_ΕΠΑΝΑΛΗΨΗΣ\nΤΕΛΟΣ_ΠΡΟΓΡΑΜΜΑΤΟΣ')
 test('chosen loop limit actually stops interpreter execution',()=>{const run=new Interpreter(program,{maxLoopIterations:10000}).execute();assert.throws(()=>{while(!run.next().done){}},/10\.000/)})
 test('changing limit while paused applies to the existing interpreter',()=>{let limit=100000;const run=new Interpreter(program,{maxLoopIterations:()=>limit}).execute();for(let i=0;i<20;i++)run.next();limit=10000;assert.throws(()=>{while(!run.next().done){}},/10\.000/)})
+
+test('προεπιλογή 16 px και μετάβαση των αποθηκευμένων ρυθμίσεων v1 στα 16 px', () => {
+  assert.equal(defaultSettings.fontSize, 16)
+  const old = restoreSettings(JSON.stringify({ version: 1, settings: { ...defaultSettings, fontSize: 14, theme: 'dark', executionDelay: 500 } }))
+  assert.equal(old.fontSize, 16); assert.equal(old.theme, 'dark'); assert.equal(old.executionDelay, 500)
+  const chosen = restoreSettings(JSON.stringify({ version: 2, settings: { ...defaultSettings, fontSize: 20 } }))
+  assert.equal(chosen.fontSize, 20)
+})

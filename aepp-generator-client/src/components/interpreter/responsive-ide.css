@@ -72,3 +72,12 @@
 .ide-memory-pinned.ide-compact .ide-commands-dialog,.ide-memory-pinned.ide-compact .ide-dock-dialog{position:static;inset:auto;width:100%;height:100%;border-radius:0;box-shadow:none}
 .ide-memory-pinned.ide-compact .ide-editor-stack.ide-has-dock{grid-template-rows:minmax(0,1fr) min(120px,55%)}
 .ide-memory-pinned.ide-compact .ide-editor-stack.ide-has-dock .ide-dock-dialog{grid-row:2}
+.ide-side-tabs{flex-wrap:nowrap;min-width:0;overflow-x:auto;gap:2px}
+.ide-panel-heading .ide-side-tabs button{padding:5px 7px;font-size:12px;white-space:nowrap;flex-shrink:0}
+/* Hover στα κουμπιά του διερμηνευτή: ελαφρύ μεγάλωμα και αλλαγή χρώματος. */
+.ide-execution-controls button,.ide-panel-controls button,.ide-panel-heading button{transition:transform .15s ease,background-color .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease}
+.ide-execution-controls button:not(:disabled):hover,.ide-panel-controls button:not(:disabled):hover,.ide-panel-heading button:not(:disabled):hover{transform:translateY(-1px) scale(1.06);background-color:#eff6ff;border-color:#93c5fd;color:#1d4ed8;box-shadow:0 4px 10px rgba(29,78,216,.15)}
+.ide-execution-controls button.ide-primary-action:not(:disabled):hover{background-color:#1e40af;border-color:#1e40af;color:#fff;box-shadow:0 6px 14px rgba(29,78,216,.35)}
+.ide-execution-controls button:not(:disabled):active,.ide-panel-controls button:not(:disabled):active,.ide-panel-heading button:not(:disabled):active{transform:scale(.97)}
+:root[data-theme="dark"] .ide-execution-controls button:not(.ide-primary-action):not(:disabled):hover,:root[data-theme="dark"] .ide-panel-controls button:not(:disabled):hover,:root[data-theme="dark"] .ide-panel-heading button:not(:disabled):hover,:root.dark .ide-execution-controls button:not(.ide-primary-action):not(:disabled):hover,:root.dark .ide-panel-controls button:not(:disabled):hover,:root.dark .ide-panel-heading button:not(:disabled):hover{background-color:#172c49;border-color:#3b82f6;color:#bfdbfe}
+@media (prefers-reduced-motion:reduce){.ide-execution-controls button,.ide-panel-controls button,.ide-panel-heading button{transition:none}.ide-execution-controls button:hover,.ide-panel-controls button:hover,.ide-panel-heading button:hover,.ide-execution-controls button:active,.ide-panel-controls button:active,.ide-panel-heading button:active{transform:none!important}}

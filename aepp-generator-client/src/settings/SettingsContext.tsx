@@ -14,6 +14,7 @@ import {
   resolveEditorTheme,
   sanitizeSettings,
   SETTINGS_KEY,
+  SETTINGS_VERSION,
   type Settings,
 } from './settings'
 import './settings.css'
@@ -57,7 +58,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     current.current = next
     setSettings(next)
     try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ version: 1, settings: next }))
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ version: SETTINGS_VERSION, settings: next }))
       setPersistent(true)
     } catch {
       setPersistent(false)

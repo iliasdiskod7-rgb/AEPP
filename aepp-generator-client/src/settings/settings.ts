@@ -14,12 +14,14 @@ export interface Settings {
   voiceRate: 0.8 | 1 | 1.25 | 1.5
 }
 export const SETTINGS_KEY = 'aepp.settings.v1'
+/** v2: νέο προεπιλεγμένο μέγεθος γραμματοσειράς 16 px. Οι ρυθμίσεις της v1 κρατιούνται, εκτός από το μέγεθος. */
+export const SETTINGS_VERSION = 2
 export const SOURCE_KEY = 'aepp.glossa.source.v1'
 export const defaultSettings: Settings = {
   theme: 'light',
   editorTheme: 'dark-default',
   density: 'comfortable',
-  fontSize: 14,
+  fontSize: 16,
   tabSize: 2,
   wordWrap: false,
   lineNumbers: true,
@@ -65,7 +67,9 @@ export function sanitizeSettings(raw: unknown): Settings {
 export function restoreSettings(raw: string | null): Settings {
   try {
     const value = JSON.parse(raw ?? 'null')
-    return value?.version === 1 ? sanitizeSettings(value.settings) : { ...defaultSettings }
+    if (value?.version === SETTINGS_VERSION) return sanitizeSettings(value.settings)
+    if (value?.version === 1) return { ...sanitizeSettings(value.settings), fontSize: defaultSettings.fontSize }
+    return { ...defaultSettings }
   } catch {
     return { ...defaultSettings }
   }

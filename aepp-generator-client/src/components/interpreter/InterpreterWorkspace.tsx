@@ -305,6 +305,9 @@ export default function InterpreterWorkspace({
   }
 
   const insert = useCallback((command: CommandSnippet) => editorRef.current?.insert(command), [])
+  // «Συνέχεια» μόνο όταν υπάρχει εκτέλεση σταματημένη στη μέση (παύση, βήμα ή αναμονή εισόδου).
+  // Μετά από Διακοπή, επαναφορά ή τέλος προγράμματος το κουμπί ξαναγράφει «Έναρξη».
+  const started = runner.current !== null && event !== null && event.kind !== 'done'
   const diagnostic = executionDiagnostic
 
   return (
@@ -367,8 +370,9 @@ export default function InterpreterWorkspace({
             suggestedInput={event?.kind === 'input' ? debugInputBuffer.current.peek() : undefined}
           />
         }
-        memory={
+        memory={tab => (
           <LiveExecutionTools
+            tab={tab}
             debuggerPanel={
               <DebuggerPanel
                 event={event}
@@ -396,7 +400,7 @@ export default function InterpreterWorkspace({
               />
             }
           />
-        }
+        )}
         controls={
           <>
             <button
@@ -413,17 +417,19 @@ export default function InterpreterWorkspace({
             </button>
             <button
               type="button"
-              title="Συνέχεια εκτέλεσης μέχρι το επόμενο σημείο διακοπής"
+              title={
+                started ? 'Συνέχεια εκτέλεσης μέχρι το επόμενο σημείο διακοπής' : 'Έναρξη εκτέλεσης του προγράμματος'
+              }
               disabled={isRunning || faulted || event?.kind === 'done'}
               onClick={() => {
                 unlockAudio()
                 setExecutionRequest(previous => previous + 1)
                 advance(true)
               }}
-              className="inline-flex items-center gap-1 rounded-lg bg-blue-700 px-3 py-2 text-white disabled:opacity-40"
+              className="ide-primary-action inline-flex items-center gap-1 rounded-lg bg-blue-700 px-3 py-2 text-white disabled:opacity-40"
             >
               <Play size={15} />
-              Συνέχεια
+              {started ? 'Συνέχεια' : 'Έναρξη'}
             </button>
             <button
               type="button"
